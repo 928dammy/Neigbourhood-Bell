@@ -19,7 +19,6 @@
         h2 { color: #333; margin: 5px 0; }
         .subtitle { color: #666; font-size: 13px; margin-bottom: 12px; }
         
-        /* Explicit height and background so it's never a blank white box */
         #map {
             height: 55vh;
             width: 100%;
@@ -91,7 +90,7 @@
         let customerLon = -0.1870;
         const ALERT_RADIUS_METERS = 500;
 
-        // Initialize Map immediately
+        // Initialize Map
         const map = L.map('map').setView([customerLat, customerLon], 14);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -123,7 +122,7 @@
                     customerMarker.setLatLng([customerLat, customerLon]);
                     radiusCircle.setLatLng([customerLat, customerLon]);
 
-                    document.getElementById("myLocationTextinnerHTML = 
+                    document.getElementById("myLocationText").innerHTML = 
                         `House GPS Set (${customerLat.toFixed(4)}, ${customerLon.toFixed(4)})`;
                 }, error => {
                     alert("Unable to retrieve location: " + error.message);
