@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neighborhood Radar - Customer</title>
+    <title>Store-to-Door Radar</title>
     
-    <!-- Leaflet CSS for the map -->
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
@@ -13,48 +13,32 @@
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: #f4f4f9;
-            padding: 20px;
+            padding: 15px;
             margin: 0;
         }
-        h2 { color: #333; margin: 10px 0; }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        h2 { color: #333; margin: 5px 0; }
+        .subtitle { color: #666; font-size: 13px; margin-bottom: 12px; }
+        
         #map {
-            height: 380px;
+            height: 65vh;
             width: 100%;
             border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .radar-box {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            text-align: left;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
             margin-bottom: 15px;
         }
-        .hawker-card {
-            background: #e9f7ef;
-            border-left: 5px solid #28a745;
+        
+        .control-box {
+            background: white;
             padding: 12px;
-            margin: 8px 0;
-            border-radius: 6px;
-        }
-        .alert-active {
-            background: #f8d7da;
-            border-left-color: #dc3545;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: left;
+            font-size: 14px;
         }
         button {
-            padding: 10px 20px;
+            padding: 10px 15px;
             background: #007bff;
             color: white;
             border: none;
@@ -62,18 +46,11 @@
             cursor: pointer;
             font-size: 14px;
             width: 100%;
-            margin-top: 5px;
+            margin-top: 8px;
         }
-        .badge {
-            background: #28a745;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            float: right;
-        }
-        .badge-city {
-            background: #17a2b8;
+        .status-pill {
+            font-weight: bold;
+            color: #28a745;
         }
     </style>
 
@@ -82,27 +59,18 @@
 </head>
 <body>
 
-    <div class="container">
-        <h2>Neighborhood Radar 📡</h2>
-        <p>Live Citywide Fleet & Proximity Alerts</p>
+    <h2>Store-to-Door Radar 📡</h2>
+    <div class="subtitle">Live Street Vendor Fleet</div>
 
-        <!-- Interactive Map Container -->
-        <div id="map"></div>
+    <!-- Interactive Map -->
+    <div id="map"></div>
 
-        <div class="radar-box">
-            <h3>📍 My House Settings</h3>
-            <p id="myLocationText">Loading default location (Accra)...</p>
-            <button onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
-        </div>
-
-        <div class="radar-box">
-            <h3>🚨 Proximity Alerts (Within 500m)</h3>
-            <div id="nearFeed">Scanning for nearby hawkers...</div>
-        </div>
-
-        <div class="radar-box">
-            <h3>🛵 Citywide Active Fleet (Live Map Feed)</h3>
-            <div id="cityFeed">Checking city activity...</div>
+    <!-- Simple Status & Location Box -->
+    <div class="control-box">
+        <div>📍 <span id="myLocationText">Using default location (Accra Center)</span></div>
+        <button onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
+        <div style="margin-top: 8px; font-size: 13px; color: #555;">
+            Radar Status: <span class="status-pill">🟢 Scanning Live (500m Audio Alert)</span>
         </div>
     </div>
 
@@ -123,20 +91,19 @@
         // Initialize Map
         const map = L.map('map').setView([customerLat, customerLon], 14);
 
-        // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Add Customer Marker & Radius Circle
+        // Customer Marker & Radius
         let customerMarker = L.marker([customerLat, customerLon]).addTo(map)
-            .bindPopup("<b>My House (Radar Center)</b>").openPopup();
+            .bindPopup("<b>🏠 My House</b>").openPopup();
 
         let radiusCircle = L.circle([customerLat, customerLon], {
             color: '#007bff',
             fillColor: '#3090C7',
-            fillOpacity: 0.12,
+            fillOpacity: 0.1,
             radius: ALERT_RADIUS_METERS
         }).addTo(map);
 
@@ -154,7 +121,7 @@
                     radiusCircle.setLatLng([customerLat, customerLon]);
 
                     document.getElementById("myLocationText").innerHTML = 
-                        `Lat: ${customerLat.toFixed(5)}, Lon: ${customerLon.toFixed(5)}`;
+                        `House GPS Set (${customerLat.toFixed(4)}, ${customerLon.toFixed(4)})`;
                 }, error => {
                     alert("Unable to retrieve location: " + error.message);
                 });
@@ -163,21 +130,24 @@
             }
         }
 
-        // Haversine formula
-        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const dLat = deg2rad(lat2 - lat1);
-            const dLon = deg2rad(lon2 - lon1);
-            const a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+        // Map product codes to clean item icons
+        function getProductEmoji(code) {
+            switch(code) {
+                case 'bread': return '🍞';
+                case 'chips': return '🍟';
+                case 'water': return '🧊';
+                default: return '🛒';
+            }
         }
 
-        function deg2rad(deg) {
-            return deg * (Math.PI / 180);
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
         async function scanCloudRadar() {
@@ -185,6 +155,7 @@
                 .from('active_hawkers')
                 .select(`
                     id,
+                    product_code,
                     route_lane,
                     vendor_note,
                     lat,
@@ -196,22 +167,14 @@
                     )
                 `);
 
-            const nearFeedDiv = document.getElementById("nearFeed");
-            const cityFeedDiv = document.getElementById("cityFeed");
-
             if (error) {
-                nearFeedDiv.innerHTML = "Error syncing with cloud radar.";
-                console.error(error);
+                console.error("Cloud sync error:", error);
                 return;
             }
 
-            let nearHtml = "";
-            let cityHtml = "";
-            let foundNear = false;
-            let foundCity = false;
             let activeIds = activeHawkers.map(h => h.id);
 
-            // Clean up markers of vendors who went offline
+            // Remove offline vendor markers from map
             for (let id in hawkerMarkers) {
                 if (!activeIds.includes(id)) {
                     map.removeLayer(hawkerMarkers[id]);
@@ -224,81 +187,52 @@
                 const roundedDist = Math.round(distance);
                 const isNearby = distance <= ALERT_RADIUS_METERS;
 
-                const prodName = data.products ? data.products.product_name : 'General Item';
-                const comicalCall = data.products ? data.products.comical_call : 'Coming straight to your gate!';
+                const emoji = getProductEmoji(data.product_code);
+                const prodName = data.products ? data.products.product_name : 'Item';
+                const comicalCall = data.products ? data.products.comical_call : 'Coming your way!';
                 const audioUrl = data.products ? data.products.audio_url : null;
 
-                // Ride-hailing map marker style (shows all active vendors across the city)
-                if (hawkerMarkers[data.id]) {
-                    hawkerMarkers[data.id].setLatLng([data.lat, data.lon]);
-                    hawkerMarkers[data.id].bindPopup(`<b>🛒 ${data.id}</b><br>Selling: ${prodName}<br>Distance: ${roundedDist}m`);
-                } else {
-                    hawkerMarkers[data.id] = L.marker([data.lat, data.lon], {
-                        icon: L.divIcon({
-                            className: 'custom-icon',
-                            html: '🛒',
-                            iconSize: [32, 32]
-                        })
-                    }).addTo(map).bindPopup(`<b>🛒 ${data.id}</b><br>Selling: ${prodName}<br>Distance: ${roundedDist}m`);
-                }
-
-                // Citywide Feed Entry (Always displayed to show human activity)
-                foundCity = true;
-                cityHtml += `
-                    <div class="hawker-card" style="border-left-color: ${isNearby ? '#dc3545' : '#17a2b8'};">
-                        <span class="badge ${isNearby ? '' : 'badge-city'}">${isNearby ? 'Nearby' : 'Citywide'}</span>
-                        <strong>👤 ${data.id}</strong> (${data.route_lane})<br>
-                        📦 Selling: ${prodName}<br>
-                        📏 Distance: ${roundedDist} meters
+                const popupContent = `
+                    <div style="text-align: center;">
+                        <b>${emoji} ${data.id}</b><br>
+                        Selling: <b>${prodName}</b><br>
+                        Area: ${data.route_lane}<br>
+                        <em>"${data.vendor_note}"</em><br>
+                        📏 <b>${roundedDist}m away</b>
+                        ${isNearby ? '<br><span style="color:red; font-weight:bold;">🚨 AT YOUR GATE!</span>' : ''}
                     </div>
                 `;
 
-                // Proximity Alert Feed & Audio Trigger
+                // Update or create map marker with product icon
+                if (hawkerMarkers[data.id]) {
+                    hawkerMarkers[data.id].setLatLng([data.lat, data.lon]);
+                    hawkerMarkers[data.id].getPopup().setContent(popupContent);
+                } else {
+                    hawkerMarkers[data.id] = L.marker([data.lat, data.lon], {
+                        icon: L.divIcon({
+                            className: 'custom-vendor-icon',
+                            html: `<div style="font-size: 26px; background: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,0.3);">${emoji}</div>`,
+                            iconSize: [36, 36],
+                            iconAnchor: [18, 18]
+                        })
+                    }).addTo(map).bindPopup(popupContent);
+                }
+
+                // Trigger proximity audio alarm when vendor crosses within 500m
                 if (isNearby) {
-                    foundNear = true;
                     if (!alertedHawkers[data.id]) {
-                        playDynamicAudio(audioUrl);
+                        if (audioUrl) {
+                            new Audio(audioUrl).play().catch(e => console.log("Audio play prevented"));
+                        }
                         alertedHawkers[data.id] = true;
                     }
-
-                    nearHtml += `
-                        <div class="hawker-card alert-active">
-                            <span class="badge">ALERT 🚨</span>
-                            <strong>👤 ${data.id}</strong><br>
-                            📢 <em>${comicalCall}</em><br>
-                            📝 Note: "${data.vendor_note}"<br>
-                            📏 Distance: <strong>${roundedDist} meters</strong><br>
-                            🚨 <strong>At your gate! Step outside!</strong>
-                        </div>
-                    `;
                 } else {
                     alertedHawkers[data.id] = false;
                 }
             });
-
-            if (!foundNear) {
-                nearFeedDiv.innerHTML = "No hawkers currently within your 500m proximity zone.";
-            } else {
-                nearFeedDiv.innerHTML = nearHtml;
-            }
-
-            if (!foundCity) {
-                cityFeedDiv.innerHTML = "No active hawkers online in the city right now.";
-            } else {
-                cityFeedDiv.innerHTML = cityHtml;
-            }
         }
 
-        function playDynamicAudio(url) {
-            if (url) {
-                const sound = new Audio(url);
-                sound.play().catch(err => {
-                    console.log("Audio play blocked by browser policy:", err);
-                });
-            }
-        }
-
-        // Poll cloud radar every 3 seconds
+        // Poll every 3 seconds
         setInterval(scanCloudRadar, 3000);
         scanCloudRadar();
     </script>
