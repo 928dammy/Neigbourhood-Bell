@@ -3,66 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendor Mode - Store-to-Door</title>
+    <title>Store-to-Door - Vendor Portal</title>
+    
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             background-color: #f4f4f9;
-            padding: 30px 20px;
+            padding: 15px;
             margin: 0;
+            text-align: center;
         }
-        h2 { color: #333; margin-bottom: 5px; }
-        .subtitle { color: #666; font-size: 14px; margin-bottom: 20px; }
-        
-        .setup-box {
+        .card {
             background: white;
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             max-width: 400px;
-            margin: 0 auto 20px auto;
+            margin: 0 auto;
             text-align: left;
         }
-        label { font-weight: bold; font-size: 14px; color: #444; }
-        input, select {
+        label { font-weight: bold; font-size: 13px; display: block; margin-top: 10px; color: #333; }
+        input, select, textarea {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
-            margin-bottom: 15px;
             border: 1px solid #ccc;
             border-radius: 6px;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 14px;
         }
-        
-        #toggleBtn {
-            font-size: 26px;
-            padding: 25px 40px;
-            background-color: #28a745;
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #28a745;
             color: white;
             border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-            transition: 0.2s;
-            width: 100%;
-            max-width: 400px;
-        }
-        #toggleBtn.active {
-            background-color: #dc3545;
-            animation: pulse-red 1.5s infinite;
-        }
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
-        }
-        #status {
-            margin-top: 25px;
-            font-size: 18px;
+            border-radius: 6px;
+            font-size: 16px;
             font-weight: bold;
-            color: #333;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button.stop { background: #dc3545; }
+        .status-box {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e9f7ef;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
         }
     </style>
 
@@ -71,144 +60,122 @@
 </head>
 <body>
 
-    <h2>🛒 Vendor Portal</h2>
-    <div class="subtitle">Keep it on while walking your route</div>
-    
-    <div class="setup-box">
-        <label for="hawkerName">Your Name / Business:</label>
-        <input type="text" id="hawkerName" value="Auntie Muni">
+    <h2>Vendor Broadcast Portal 🛵</h2>
+    <p style="font-size: 13px; color: #666;">Set your route, departure time, and go live!</p>
 
-        <label for="productType">What are you selling?</label>
-        <select id="productType">
-            <option value="bread">Fresh Bread (Bicycle Bell)</option>
-            <option value="chips">Plantain Chips (Whistle)</option>
-            <option value="water">Sachet / Ice Water (Cooler Clink)</option>
+    <div class="card">
+        <label for="vendorId">Vendor Name / ID:</label>
+        <input type="text" id="vendorId" placeholder="e.g., Auntie Muni">
+
+        <label for="productCode">Select Product:</label>
+        <select id="productCode">
+            <option value="bread">🍞 Fresh Bread</option>
+            <option value="beans">🫘 Hot Beans & Plantain</option>
+            <option value="chips">🍟 Plantain Chips</option>
+            <option value="water">🧊 Ice Water</option>
         </select>
 
-        <label for="routeLane">Your Walking Lane / Area:</label>
-        <input type="text" id="routeLane" value="Dansoman High Street">
+        <label for="routeLane">Desired Route / Street Lane:</label>
+        <select id="routeLane">
+            <option value="Ridge Road Lane">Ridge Road Lane</option>
+            <option value="Airport Residential Way">Airport Residential Way</option>
+            <option value="Cantonments Boulevard">Cantonments Boulevard</option>
+            <option value="Spintex Highway Track">Spintex Highway Track</option>
+        </select>
 
-        <label for="vendorNote">Quick Status Note (Optional):</label>
-        <input type="text" id="vendorNote" value="Hot butter bread available!">
+        <label for="departureTime">Scheduled Departure Time:</label>
+        <input type="time" id="departureTime" value="14:00">
+
+        <label for="vendorNote">Quick Audio Note / Status:</label>
+        <textarea id="vendorNote" rows="2" placeholder="Hot fresh beans ready at the gate!"></textarea>
+
+        <button id="broadcastBtn" onclick="toggleBroadcast()">Start Walking / Go Live</button>
+
+        <div id="statusBox" class="status-box">
+            🟢 <b>Broadcasting Live!</b><br>
+            Your GPS & route are streaming to the customer radar.
+        </div>
     </div>
-
-    <!-- Massive One-Tap Button -->
-    <button id="toggleBtn" onclick="toggleWalking()">Start Walking</button>
-
-    <div id="status">Status: Offline (Tap above when ready)</div>
 
     <script>
         // REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-        const SUPABASE_URL = 'https://mhexovvruulnfnvtvdfq.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oZXhvdnZydXVsbmZudnR2ZGZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMTMwNjAsImV4cCI6MjEwNzg4OTA2MH0.rDrrHXvBrMIENBbyNKrsMgxgBr4YiEXsDyATVjJK3Xg';
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        let isLive = false;
         let watchId = null;
-        let upsertInterval = null;
-        let currentLat = null;
-        let currentLon = null;
+        let pingInterval = null;
+        let currentLat = 5.6037;
+        let currentLon = -0.1870;
 
-        const btn = document.getElementById("toggleBtn");
-        const statusDiv = document.getElementById("status");
+        async function toggleBroadcast() {
+            const vendorId = document.getElementById("vendorId").value.trim();
+            const productCode = document.getElementById("productCode").value;
+            const routeLane = document.getElementById("routeLane").value;
+            const departureTime = document.getElementById("departureTime").value;
+            const vendorNote = document.getElementById("vendorNote").value;
+            const btn = document.getElementById("broadcastBtn");
+            const statusBox = document.getElementById("statusBox");
 
-        // Tiny silent audio loop to prevent mobile browsers from killing background GPS tracking
-        const silentAudio = new Audio("data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
-        silentAudio.loop = true;
-
-        function toggleWalking() {
-            if (!watchId) {
-                startTracking();
-            } else {
-                stopTracking();
-            }
-        }
-
-        function startTracking() {
-            const hawkerId = document.getElementById("hawkerName").value.trim();
-            const productCode = document.getElementById("productType").value;
-            const routeLane = document.getElementById("routeLane").value.trim();
-            const vendorNote = document.getElementById("vendorNote").value.trim();
-
-            if (!hawkerId) {
-                alert("Please enter your name.");
+            if (!vendorId) {
+                alert("Please enter your Vendor Name or ID.");
                 return;
             }
 
-            if (navigator.geolocation) {
-                silentAudio.play().catch(err => console.log("Audio wake lock active"));
+            if (!isLive) {
+                // Start broadcasting
+                isLive = true;
+                btn.innerText = "Stop Broadcasting";
+                btn.className = "stop";
+                statusBox.style.display = "block";
 
-                btn.innerText = "Stop Walking / Pocket Mode";
-                btn.classList.add("active");
-                statusDiv.innerText = "Status: 🟢 Pocket Mode Active (Broadcasting to cloud)";
-
-                // Start continuous GPS watch
-                watchId = navigator.geolocation.watchPosition(
-                    (position) => {
+                // Get initial GPS
+                if (navigator.geolocation) {
+                    watchId = navigator.geolocation.watchPosition(position => {
                         currentLat = position.coords.latitude;
                         currentLon = position.coords.longitude;
-                        pushToSupabase(hawkerId, productCode, routeLane, vendorNote);
-                    },
-                    (error) => {
-                        statusDiv.innerText = `GPS Error: ${error.message}`;
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-                );
+                    }, err => console.log("GPS watch error:", err), { enableHighAccuracy: true });
+                }
 
-                // Periodic heartbeat to refresh 'updated_at' timestamp so the 60s cleanup trigger doesn't wipe active vendors
-                upsertInterval = setInterval(() => {
-                    if (currentLat !== null && currentLon !== null) {
-                        pushToSupabase(hawkerId, productCode, routeLane, vendorNote);
-                    }
-                }, 10000);
+                // Send initial sync and repeat every 5 seconds
+                sendDataToSupabase(vendorId, productCode, routeLane, departureTime, vendorNote);
+                pingInterval = setInterval(() => {
+                    sendDataToSupabase(vendorId, productCode, routeLane, departureTime, vendorNote);
+                }, 5000);
 
             } else {
-                alert("Geolocation is not supported by your phone browser.");
+                // Stop broadcasting (Delete from active_hawkers)
+                isLive = false;
+                btn.innerText = "Start Walking / Go Live";
+                btn.className = "";
+                statusBox.style.display = "none";
+
+                if (watchId) navigator.geolocation.clearWatch(watchId);
+                clearInterval(pingInterval);
+
+                await supabaseClient.from('active_hawkers').delete().eq('id', vendorId);
+                alert("You are now offline.");
             }
         }
 
-        async function pushToSupabase(id, product_code, route_lane, vendor_note) {
+        async function sendDataToSupabase(id, product_code, route_lane, departure_time, vendor_note) {
             const { error } = await supabaseClient
                 .from('active_hawkers')
-                .upsert({
+                .upsert([{
                     id: id,
                     product_code: product_code,
                     route_lane: route_lane,
+                    departure_time: departure_time + ':00',
                     vendor_note: vendor_note,
                     lat: currentLat,
                     lon: currentLon,
                     updated_at: new Date()
-                });
+                }]);
 
             if (error) {
-                console.error("Supabase sync error:", error.message);
+                console.error("Supabase sync error:", error);
             }
-        }
-
-        async function stopTracking() {
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
-            if (upsertInterval !== null) {
-                clearInterval(upsertInterval);
-                upsertInterval = null;
-            }
-            
-            silentAudio.pause();
-
-            const hawkerId = document.getElementById("hawkerName").value.trim();
-            
-            // Remove record immediately from Supabase on stop
-            await supabaseClient
-                .from('active_hawkers')
-                .delete()
-                .eq('id', hawkerId);
-
-            btn.innerText = "Start Walking";
-            btn.classList.remove("active");
-            statusDiv.innerText = "Status: Offline";
-            currentLat = null;
-            currentLon = null;
         }
     </script>
 </body>
