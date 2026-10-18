@@ -20,7 +20,7 @@
         .subtitle { color: #666; font-size: 13px; margin-bottom: 12px; }
         
         #map {
-            height: 55vh;
+            height: 50vh;
             width: 100%;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -97,6 +97,11 @@
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
+
+        // Fix mobile grey box rendering issue by forcing a size refresh
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 300);
 
         // Customer Marker & Radius
         let customerMarker = L.marker([customerLat, customerLon]).addTo(map)
