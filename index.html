@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neighborhood Radar Map - Customer</title>
+    <title>Neighborhood Radar - Customer</title>
     
     <!-- Leaflet CSS for the map -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -22,7 +22,7 @@
             margin: 0 auto;
         }
         #map {
-            height: 350px;
+            height: 380px;
             width: 100%;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -39,9 +39,9 @@
         .hawker-card {
             background: #e9f7ef;
             border-left: 5px solid #28a745;
-            padding: 10px;
+            padding: 12px;
             margin: 8px 0;
-            border-radius: 4px;
+            border-radius: 6px;
         }
         .alert-active {
             background: #f8d7da;
@@ -58,11 +58,22 @@
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             width: 100%;
             margin-top: 5px;
+        }
+        .badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            float: right;
+        }
+        .badge-city {
+            background: #17a2b8;
         }
     </style>
 
@@ -73,7 +84,7 @@
 
     <div class="container">
         <h2>Neighborhood Radar 📡</h2>
-        <p>Live Cloud Map & Comical Ad Feed</p>
+        <p>Live Citywide Fleet & Proximity Alerts</p>
 
         <!-- Interactive Map Container -->
         <div id="map"></div>
@@ -85,8 +96,13 @@
         </div>
 
         <div class="radar-box">
-            <h3>🚶‍♂️ Passing Hawkers Nearby</h3>
-            <div id="radarFeed">Connecting to cloud radar network...</div>
+            <h3>🚨 Proximity Alerts (Within 500m)</h3>
+            <div id="nearFeed">Scanning for nearby hawkers...</div>
+        </div>
+
+        <div class="radar-box">
+            <h3>🛵 Citywide Active Fleet (Live Map Feed)</h3>
+            <div id="cityFeed">Checking city activity...</div>
         </div>
     </div>
 
@@ -95,8 +111,8 @@
 
     <script>
         // REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
-        const SUPABASE_URL = 'https://mhexovvruulnfnvtvdfq.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oZXhvdnZydXVsbmZudnR2ZGZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMTMwNjAsImV4cCI6MjEwNzg4OTA2MH0.rDrrHXvBrMIENBbyNKrsMgxgBr4YiEXsDyATVjJK3Xg';
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Default customer location (Accra center)
@@ -105,7 +121,7 @@
         const ALERT_RADIUS_METERS = 500;
 
         // Initialize Map
-        const map = L.map('map').setView([customerLat, customerLon], 15);
+        const map = L.map('map').setView([customerLat, customerLon], 14);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -115,12 +131,12 @@
 
         // Add Customer Marker & Radius Circle
         let customerMarker = L.marker([customerLat, customerLon]).addTo(map)
-            .bindPopup("<b>My House</b>").openPopup();
+            .bindPopup("<b>My House (Radar Center)</b>").openPopup();
 
         let radiusCircle = L.circle([customerLat, customerLon], {
-            color: 'blue',
+            color: '#007bff',
             fillColor: '#3090C7',
-            fillOpacity: 0.15,
+            fillOpacity: 0.12,
             radius: ALERT_RADIUS_METERS
         }).addTo(map);
 
@@ -133,7 +149,7 @@
                     customerLat = position.coords.latitude;
                     customerLon = position.coords.longitude;
                     
-                    map.setView([customerLat, customerLon], 16);
+                    map.setView([customerLat, customerLon], 15);
                     customerMarker.setLatLng([customerLat, customerLon]);
                     radiusCircle.setLatLng([customerLat, customerLon]);
 
@@ -165,7 +181,6 @@
         }
 
         async function scanCloudRadar() {
-            // Fetch active hawkers joined with product metadata (comical calls & audio URLs) from Supabase
             const { data: activeHawkers, error } = await supabaseClient
                 .from('active_hawkers')
                 .select(`
@@ -181,18 +196,22 @@
                     )
                 `);
 
-            const feedDiv = document.getElementById("radarFeed");
+            const nearFeedDiv = document.getElementById("nearFeed");
+            const cityFeedDiv = document.getElementById("cityFeed");
+
             if (error) {
-                feedDiv.innerHTML = "Error syncing with cloud radar.";
+                nearFeedDiv.innerHTML = "Error syncing with cloud radar.";
                 console.error(error);
                 return;
             }
 
-            let htmlContent = "";
-            let foundAny = false;
+            let nearHtml = "";
+            let cityHtml = "";
+            let foundNear = false;
+            let foundCity = false;
             let activeIds = activeHawkers.map(h => h.id);
 
-            // Clean up markers of vendors who went offline or timed out
+            // Clean up markers of vendors who went offline
             for (let id in hawkerMarkers) {
                 if (!activeIds.includes(id)) {
                     map.removeLayer(hawkerMarkers[id]);
@@ -201,7 +220,6 @@
             }
 
             activeHawkers.forEach(data => {
-                foundAny = true;
                 const distance = getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon);
                 const roundedDist = Math.round(distance);
                 const isNearby = distance <= ALERT_RADIUS_METERS;
@@ -210,44 +228,64 @@
                 const comicalCall = data.products ? data.products.comical_call : 'Coming straight to your gate!';
                 const audioUrl = data.products ? data.products.audio_url : null;
 
-                // Update or create Hawker Map Marker
+                // Ride-hailing map marker style (shows all active vendors across the city)
                 if (hawkerMarkers[data.id]) {
                     hawkerMarkers[data.id].setLatLng([data.lat, data.lon]);
-                    hawkerMarkers[data.id].bindPopup(`<b>${data.id}</b><br>Selling: ${prodName}`);
+                    hawkerMarkers[data.id].bindPopup(`<b>🛒 ${data.id}</b><br>Selling: ${prodName}<br>Distance: ${roundedDist}m`);
                 } else {
                     hawkerMarkers[data.id] = L.marker([data.lat, data.lon], {
                         icon: L.divIcon({
                             className: 'custom-icon',
                             html: '🛒',
-                            iconSize: [30, 30]
+                            iconSize: [32, 32]
                         })
-                    }).addTo(map).bindPopup(`<b>${data.id}</b><br>Selling: ${prodName}`);
+                    }).addTo(map).bindPopup(`<b>🛒 ${data.id}</b><br>Selling: ${prodName}<br>Distance: ${roundedDist}m`);
                 }
 
+                // Citywide Feed Entry (Always displayed to show human activity)
+                foundCity = true;
+                cityHtml += `
+                    <div class="hawker-card" style="border-left-color: ${isNearby ? '#dc3545' : '#17a2b8'};">
+                        <span class="badge ${isNearby ? '' : 'badge-city'}">${isNearby ? 'Nearby' : 'Citywide'}</span>
+                        <strong>👤 ${data.id}</strong> (${data.route_lane})<br>
+                        📦 Selling: ${prodName}<br>
+                        📏 Distance: ${roundedDist} meters
+                    </div>
+                `;
+
+                // Proximity Alert Feed & Audio Trigger
                 if (isNearby) {
+                    foundNear = true;
                     if (!alertedHawkers[data.id]) {
                         playDynamicAudio(audioUrl);
                         alertedHawkers[data.id] = true;
                     }
+
+                    nearHtml += `
+                        <div class="hawker-card alert-active">
+                            <span class="badge">ALERT 🚨</span>
+                            <strong>👤 ${data.id}</strong><br>
+                            📢 <em>${comicalCall}</em><br>
+                            📝 Note: "${data.vendor_note}"<br>
+                            📏 Distance: <strong>${roundedDist} meters</strong><br>
+                            🚨 <strong>At your gate! Step outside!</strong>
+                        </div>
+                    `;
                 } else {
                     alertedHawkers[data.id] = false;
                 }
-
-                htmlContent += `
-                    <div class="hawker-card ${isNearby ? 'alert-active' : ''}">
-                        <strong>👤 ${data.id}</strong> (${data.route_lane})<br>
-                        📢 <em>${comicalCall}</em><br>
-                        📝 Note: "${data.vendor_note}"<br>
-                        📏 Distance: <strong>${roundedDist} meters</strong><br>
-                        ${isNearby ? '🚨 <strong>Nearby! Run to your gate before he pass!</strong>' : '⏳ Approaching your hood...'}
-                    </div>
-                `;
             });
 
-            if (!foundAny) {
-                feedDiv.innerHTML = "No hawkers currently online in your area.";
+            if (!foundNear) {
+                nearFeedDiv.innerHTML = "No hawkers currently within your 500m proximity zone.";
             } else {
-                feedDiv.innerHTML = htmlContent;
+                nearFeedDiv.innerHTML = nearHtml;
+            }
+
+            if (!foundCity) {
+                cityFeedDiv.innerHTML = "No active hawkers online in the city right now.";
+            } else {
+                cityFeedDiv.innerHTML = cityHtml;
             }
         }
 
@@ -260,7 +298,7 @@
             }
         }
 
-        // Poll Supabase cloud radar every 3 seconds
+        // Poll cloud radar every 3 seconds
         setInterval(scanCloudRadar, 3000);
         scanCloudRadar();
     </script>
