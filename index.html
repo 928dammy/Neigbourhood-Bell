@@ -6,23 +6,23 @@
     <title>Store-to-Door Radar & Vendor Portal</title>
     
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html {
             height: 100%;
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            overflow: hidden;
         }
         .app-header {
             padding: 8px 10px;
             text-align: center;
             background: #fff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 10;
         }
         h2 { color: #333; margin: 0; font-size: 16px; }
         .subtitle { color: #666; font-size: 10px; margin: 0; }
@@ -46,6 +46,7 @@
             border: none;
             background: transparent;
             color: #555;
+            z-index: 5;
         }
         .mode-btn.active {
             background: #007bff;
@@ -58,7 +59,8 @@
             display: flex;
             flex-direction: column;
             width: 100%;
-            overflow: hidden;
+            height: calc(100% - 70px);
+            position: relative;
         }
         #map-container {
             flex: 1;
@@ -75,6 +77,7 @@
             text-align: left;
             font-size: 11px;
             width: 100%;
+            z-index: 5;
         }
         
         /* Engaging Vendor UI */
@@ -87,6 +90,7 @@
             max-width: 500px;
             margin: 0 auto;
             width: 100%;
+            z-index: 5;
         }
         .card-box {
             background: white;
@@ -118,6 +122,8 @@
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(40,167,69,0.3);
             text-align: center;
+            z-index: 5;
+            position: relative;
         }
         .big-btn.stop {
             background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
@@ -131,7 +137,7 @@
         }
         .time-tab {
             flex: 1;
-            padding: 6px;
+            padding: 8px;
             text-align: center;
             background: #f1f3f5;
             border: 1px solid #dee2e6;
@@ -139,11 +145,23 @@
             font-size: 11px;
             font-weight: bold;
             cursor: pointer;
+            z-index: 5;
         }
         .time-tab.active {
             background: #28a745;
             color: white;
             border-color: #28a745;
+        }
+
+        .prod-select-btn {
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: center;
+            z-index: 5;
+            transition: all 0.2s ease;
         }
 
         .top-products-strip {
@@ -189,7 +207,7 @@
     </div>
 
     <!-- ================= CUSTOMER VIEW ================= -->
-    <div id="customerView" class="view-section">
+    <div id="customerView" class="view-section" style="display: flex;">
         <div id="map-container">
             <iframe id="googleMap" src="https://maps.google.com/maps?q=5.6037,-0.1870&z=15&output=embed"></iframe>
         </div>
@@ -211,13 +229,13 @@
             <div class="wishlist-section">
                 <div style="font-weight: bold; margin-bottom: 2px;">🔮 Future Craving Alert:</div>
                 <div style="display: flex; gap: 4px;">
-                    <select id="wishItem" style="font-size:10px; padding:2px; flex:1;">
+                    <select id="wishItem" style="font-size:10px; padding:4px; flex:1;">
                         <option value="beans">🫘 Hot Beans & Plantain</option>
                         <option value="bread">🍞 Fresh Bread</option>
                         <option value="chips">🍟 Plantain Chips</option>
                     </select>
-                    <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:2px; width:65px;">
-                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 6px; font-size:10px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold;">Set</button>
+                    <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:4px; width:65px;">
+                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:4px 8px; font-size:10px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">Set</button>
                 </div>
                 <div id="wishStatus" style="font-size: 9px; color: #856404; margin-top: 1px;">Status: Ready to sync with cloud.</div>
             </div>
@@ -230,38 +248,38 @@
         </div>
     </div>
 
-    <!-- ================= VENDOR VIEW (Vibrant & Zero-Literacy Friendly) ================= -->
+    <!-- ================= VENDOR VIEW ================= -->
     <div id="vendorView" class="view-section" style="display: none;">
         <div class="vendor-container">
             
             <div class="card-box">
-                <div style="font-size: 14px; font-weight: bold; color: #2b8a3e; margin-bottom: 6px;">🎯 Step 1: Pick What You Are Selling</div>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-                    <button type="button" class="prod-select-btn" onclick="selectProduct('bread', this)" style="padding: 10px; border: 2px solid #28a745; background: #e9f7ef; border-radius: 6px; font-weight: bold; cursor: pointer;">🍞 Bread</button>
-                    <button type="button" class="prod-select-btn" onclick="selectProduct('beans', this)" style="padding: 10px; border: 1px solid #ccc; background: white; border-radius: 6px; font-weight: bold; cursor: pointer;">🫘 Beans</button>
-                    <button type="button" class="prod-select-btn" onclick="selectProduct('chips', this)" style="padding: 10px; border: 1px solid #ccc; background: white; border-radius: 6px; font-weight: bold; cursor: pointer;">🍟 Chips</button>
-                    <button type="button" class="prod-select-btn" onclick="selectProduct('water', this)" style="padding: 10px; border: 1px solid #ccc; background: white; border-radius: 6px; font-weight: bold; cursor: pointer;">🧊 Water</button>
+                <div style="font-size: 14px; font-weight: bold; color: #2b8a3e; margin-bottom: 8px;">🎯 Step 1: Pick What You Are Selling</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                    <button type="button" id="btn_bread" class="prod-select-btn" onclick="selectProduct('bread')" style="border: 2px solid #28a745; background: #e9f7ef; color: #155724;">🍞 Bread</button>
+                    <button type="button" id="btn_beans" class="prod-select-btn" onclick="selectProduct('beans')" style="border: 1px solid #ced4da; background: white; color: #333;">🫘 Beans</button>
+                    <button type="button" id="btn_chips" class="prod-select-btn" onclick="selectProduct('chips')" style="border: 1px solid #ced4da; background: white; color: #333;">🍟 Chips</button>
+                    <button type="button" id="btn_water" class="prod-select-btn" onclick="selectProduct('water')" style="border: 1px solid #ced4da; background: white; color: #333;">🧊 Water</button>
                 </div>
                 <input type="hidden" id="selectedProductCode" value="bread">
             </div>
 
             <div class="card-box">
-                <div style="font-size: 14px; font-weight: bold; color: #2b8a3e; margin-bottom: 6px;">⏰ Step 2: Choose Timing</div>
+                <div style="font-size: 14px; font-weight: bold; color: #2b8a3e; margin-bottom: 8px;">⏰ Step 2: Choose Timing</div>
                 <div class="timing-toggle">
                     <div id="modeNow" class="time-tab active" onclick="setTimingMode('now')">⚡ Begin Now (Live)</div>
                     <div id="modeSchedule" class="time-tab" onclick="setTimingMode('schedule')">📅 Schedule Later</div>
                 </div>
-                <div id="scheduleTimeContainer" style="display: none; margin-top: 8px;">
+                <div id="scheduleTimeContainer" style="display: none; margin-top: 10px;">
                     <label>Departure Time:</label>
                     <input type="time" id="departureTime" value="14:00">
                 </div>
             </div>
 
             <div class="card-box" style="text-align: center; padding: 15px;">
-                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">📍 <em>Route is tracked automatically as you walk. No typing required!</em></div>
+                <div style="font-size: 12px; color: #666; margin-bottom: 10px;">📍 <em>Route is tracked automatically as you walk. No typing required!</em></div>
                 <button id="broadcastBtn" class="big-btn" onclick="toggleBroadcast()">🚀 START WALKING / GO LIVE</button>
                 
-                <div id="vendorStatusBox" style="margin-top: 10px; padding: 8px; background: #e9f7ef; border-radius: 6px; font-size: 12px; color: #155724; display: none; font-weight: bold;">
+                <div id="vendorStatusBox" style="margin-top: 10px; padding: 10px; background: #e9f7ef; border-radius: 6px; font-size: 12px; color: #155724; display: none; font-weight: bold;">
                     🟢 YOU ARE LIVE! Broadcasting your position.
                 </div>
             </div>
@@ -272,7 +290,12 @@
     <script>
         const SUPABASE_URL = 'YOUR_SUPABASE_URL';
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabaseClient;
+        try {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch(e) {
+            console.log("Supabase initialization warning");
+        }
 
         function switchMode(mode) {
             if (mode === 'customer') {
@@ -289,14 +312,21 @@
         }
 
         let selectedProduct = 'bread';
-        function selectProduct(code, btn) {
+        function selectProduct(code) {
             selectedProduct = code;
-            document.querySelectorAll('.prod-select-btn').forEach(b => {
-                b.style.border = '1px solid #ccc';
-                b.style.background = 'white';
+            const products = ['bread', 'beans', 'chips', 'water'];
+            products.forEach(p => {
+                const btn = document.getElementById('btn_' + p);
+                if (p === code) {
+                    btn.style.border = '2px solid #28a745';
+                    btn.style.background = '#e9f7ef';
+                    btn.style.color = '#155724';
+                } else {
+                    btn.style.border = '1px solid #ced4da';
+                    btn.style.background = 'white';
+                    btn.style.color = '#333';
+                }
             });
-            btn.style.border = '2px solid #28a745';
-            btn.style.background = '#e9f7ef';
             document.getElementById('selectedProductCode').value = code;
         }
 
@@ -321,10 +351,12 @@
         let alertedHawkers = {};
 
         async function setWishlist() {
+            if (!supabaseClient) { alert("Supabase not connected."); return; }
             const item = document.getElementById("wishItem").value;
             const time = document.getElementById("wishTime").value;
 
-            await supabaseClient.from('customer_wishlists').insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
+            const { error } = await supabaseClient.from('customer_wishlists').insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
+            if (error) { alert("Error saving wishlist."); return; }
             document.getElementById("wishStatus").innerHTML = `🔔 Saved! Alert set for ${item} around ${time}.`;
             alert(`Wishlist saved! We'll track ${item} vendors for you around ${time}.`);
         }
@@ -336,7 +368,9 @@
                     customerLon = position.coords.longitude;
                     document.getElementById("googleMap").src = `https://maps.google.com/maps?q=${customerLat},${customerLon}&z=15&output=embed`;
                     document.getElementById("myLocationText").innerHTML = `GPS Locked`;
-                }, err => alert("GPS Error"), { enableHighAccuracy: true });
+                }, err => alert("GPS Error: " + err.message), { enableHighAccuracy: true });
+            } else {
+                alert("Geolocation not supported.");
             }
         }
 
@@ -361,6 +395,7 @@
         }
 
         async function scanCloudRadar() {
+            if (!supabaseClient) return;
             const { data: activeHawkers } = await supabaseClient.from('active_hawkers').select(`id, product_code, lat, lon, products (audio_url)`);
             const vendorListDiv = document.getElementById("vendorList");
             if (!activeHawkers || activeHawkers.length === 0) {
@@ -389,7 +424,7 @@
         setInterval(scanCloudRadar, 3000);
         scanCloudRadar();
 
-        // Vendor Passive Tracking Logic (Zero Literacy Required)
+        // Vendor Passive Tracking Logic
         let isLive = false;
         let watchId = null;
         let pingInterval = null;
@@ -398,6 +433,7 @@
         let vendorUniqueId = "Vendor_" + Math.floor(Math.random() * 9000 + 1000);
 
         async function toggleBroadcast() {
+            if (!supabaseClient) { alert("Supabase not connected."); return; }
             const btn = document.getElementById("broadcastBtn");
             const statusBox = document.getElementById("vendorStatusBox");
             const productCode = selectedProduct;
