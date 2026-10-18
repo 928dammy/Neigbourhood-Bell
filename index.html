@@ -13,36 +13,36 @@
             padding: 0;
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
-            overflow: hidden; /* Strict no-scroll screen lock */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
         }
         .app-header {
-            padding: 5px 10px;
+            padding: 8px 10px;
             text-align: center;
             background: #fff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        h2 { color: #333; margin: 0; font-size: 15px; }
+        h2 { color: #333; margin: 0; font-size: 16px; }
         .subtitle { color: #666; font-size: 10px; margin: 0; }
         
-        /* Mode Switcher Bar */
+        /* Mode Switcher */
         .mode-switcher {
             display: flex;
             background: #e9ecef;
             padding: 3px;
-            margin: 4px 10px 0 10px;
-            border-radius: 6px;
+            margin: 6px 10px 0 10px;
+            border-radius: 8px;
         }
         .mode-btn {
             flex: 1;
-            padding: 5px;
+            padding: 6px;
             text-align: center;
             font-size: 11px;
             font-weight: bold;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 6px;
             border: none;
             background: transparent;
             color: #555;
@@ -50,10 +50,9 @@
         .mode-btn.active {
             background: #007bff;
             color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }
 
-        /* Views */
         .view-section {
             flex: 1;
             display: flex;
@@ -67,11 +66,7 @@
             background: #ddd;
             min-height: 150px;
         }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
+        iframe { width: 100%; height: 100%; border: none; }
         
         .control-box {
             background: white;
@@ -82,25 +77,73 @@
             width: 100%;
         }
         
-        /* Vendor Portal Form View */
-        .vendor-form-container {
+        /* Engaging Vendor UI */
+        .vendor-container {
             flex: 1;
-            padding: 15px;
+            padding: 12px;
             overflow-y: auto;
-            background: #fff;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9f7ef 100%);
             text-align: left;
             max-width: 500px;
             margin: 0 auto;
             width: 100%;
         }
+        .card-box {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+            margin-bottom: 10px;
+        }
         label { font-weight: bold; font-size: 11px; display: block; margin-top: 6px; color: #333; }
         input, select, textarea {
             width: 100%;
-            padding: 6px;
-            margin-top: 2px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 8px;
+            margin-top: 3px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
             font-size: 12px;
+        }
+        
+        /* Big Bold Action Buttons */
+        .big-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(40,167,69,0.3);
+            text-align: center;
+        }
+        .big-btn.stop {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            box-shadow: 0 4px 10px rgba(220,53,69,0.3);
+        }
+
+        .timing-toggle {
+            display: flex;
+            gap: 6px;
+            margin-top: 5px;
+        }
+        .time-tab {
+            flex: 1;
+            padding: 6px;
+            text-align: center;
+            background: #f1f3f5;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .time-tab.active {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
         }
 
         .top-products-strip {
@@ -119,20 +162,6 @@
             color: #155724;
             white-space: nowrap;
         }
-        button.action-btn {
-            padding: 8px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            width: 100%;
-            margin-top: 4px;
-            font-weight: bold;
-        }
-        button.stop-btn { background: #dc3545; }
-        
         .wishlist-section {
             margin-top: 4px;
             background: #fff3cd;
@@ -140,10 +169,7 @@
             padding: 4px 6px;
             border-radius: 4px;
         }
-        .status-pill {
-            font-weight: bold;
-            color: #28a745;
-        }
+        .status-pill { font-weight: bold; color: #28a745; }
     </style>
 
     <!-- Supabase JS Client CDN -->
@@ -154,9 +180,8 @@
     <!-- Header -->
     <div class="app-header">
         <h2>Store-to-Door Radar 📡</h2>
-        <div class="subtitle">Live Fleet & Wishlist Alerts</div>
+        <div class="subtitle">Live Street Fleet & Smart Cravings</div>
         
-        <!-- Toggle Switch -->
         <div class="mode-switcher">
             <button id="customerTabBtn" class="mode-btn active" onclick="switchMode('customer')">🏠 Customer Radar</button>
             <button id="vendorTabBtn" class="mode-btn" onclick="switchMode('vendor')">🛵 Vendor Portal</button>
@@ -192,12 +217,12 @@
                         <option value="chips">🍟 Plantain Chips</option>
                     </select>
                     <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:2px; width:65px;">
-                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 6px; font-size:10px; background:#007bff; color:white; border:none; border-radius:3px;">Set</button>
+                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 6px; font-size:10px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold;">Set</button>
                 </div>
                 <div id="wishStatus" style="font-size: 9px; color: #856404; margin-top: 1px;">Status: Ready to sync with cloud.</div>
             </div>
 
-            <button class="action-btn" onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
+            <button style="padding:8px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; font-size:12px; width:100%; margin-top:4px; font-weight:bold;" onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
             
             <div id="vendorList" style="font-size: 10px; color: #555; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 Scanning cloud radar...
@@ -205,49 +230,50 @@
         </div>
     </div>
 
-    <!-- ================= VENDOR VIEW ================= -->
+    <!-- ================= VENDOR VIEW (Vibrant & Zero-Literacy Friendly) ================= -->
     <div id="vendorView" class="view-section" style="display: none;">
-        <div class="vendor-form-container">
-            <label for="vendorId">Vendor Name / ID:</label>
-            <input type="text" id="vendorId" placeholder="e.g., Auntie Muni">
-
-            <label for="productCode">Select Product:</label>
-            <select id="productCode">
-                <option value="bread">🍞 Fresh Bread</option>
-                <option value="beans">🫘 Hot Beans & Plantain</option>
-                <option value="chips">🍟 Plantain Chips</option>
-                <option value="water">🧊 Ice Water</option>
-            </select>
-
-            <label for="routeLane">Desired Route / Street Lane:</label>
-            <select id="routeLane">
-                <option value="Ridge Road Lane">Ridge Road Lane</option>
-                <option value="Airport Residential Way">Airport Residential Way</option>
-                <option value="Cantonments Boulevard">Cantonments Boulevard</option>
-                <option value="Spintex Highway Track">Spintex Highway Track</option>
-            </select>
-
-            <label for="departureTime">Scheduled Departure Time:</label>
-            <input type="time" id="departureTime" value="14:00">
-
-            <label for="vendorNote">Quick Note / Status:</label>
-            <textarea id="vendorNote" rows="2" placeholder="Hot fresh beans ready at the gate!"></textarea>
-
-            <button id="broadcastBtn" class="action-btn" style="background:#28a745; margin-top:12px;" onclick="toggleBroadcast()">Start Walking / Go Live</button>
-
-            <div id="vendorStatusBox" style="margin-top: 10px; padding: 8px; background: #e9f7ef; border-radius: 4px; font-size: 11px; display: none;">
-                🟢 <b>Broadcasting Live!</b> Your route & schedule are streaming.
+        <div class="vendor-container">
+            
+            <div class="card-box">
+                <div style="font-size: 14px; font-weight: bold; color: #2b8a3e; margin-bottom: 6px;">🎯 Step 1: Pick What You Are Selling</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                    <button type="button" class="prod-select-btn" onclick="selectProduct('bread', this)" style="padding: 10px; border: 2px solid #28a745; background: #e9f7ef; border-radius: 6px; font-weight: bold; cursor: pointer;">🍞 Bread</button>
+                    <button type="button" class="prod-select-btn" onclick="selectProduct('beans', this)" style="padding: 10px; border: 1px solid #ccc; background: white; border-radius: 6px; font-weight: bold; cursor: pointer;">🫘 Beans</button>
+                    <button type="button" class="prod-select-btn" onclick="selectProduct('chips', this)" style="padding: 10px; border: 1px solid #ccc; background: white; border-radius: 6px; font-weight: bold; cursor: pointer;">🍟 Chips</button>
+                    <button type="button" class="prod-select-btn" onclick="selectProduct('water', this)" style="padding: 10px; border: 1px solid #ccc; background: white; border-radius: 6px; font-weight: bold; cursor: pointer;">🧊 Water</button>
+                </div>
+                <input type="hidden" id="selectedProductCode" value="bread">
             </div>
+
+            <div class="card-box">
+                <div style="font-size: 14px; font-weight: bold; color: #2b8a3e; margin-bottom: 6px;">⏰ Step 2: Choose Timing</div>
+                <div class="timing-toggle">
+                    <div id="modeNow" class="time-tab active" onclick="setTimingMode('now')">⚡ Begin Now (Live)</div>
+                    <div id="modeSchedule" class="time-tab" onclick="setTimingMode('schedule')">📅 Schedule Later</div>
+                </div>
+                <div id="scheduleTimeContainer" style="display: none; margin-top: 8px;">
+                    <label>Departure Time:</label>
+                    <input type="time" id="departureTime" value="14:00">
+                </div>
+            </div>
+
+            <div class="card-box" style="text-align: center; padding: 15px;">
+                <div style="font-size: 12px; color: #666; margin-bottom: 8px;">📍 <em>Route is tracked automatically as you walk. No typing required!</em></div>
+                <button id="broadcastBtn" class="big-btn" onclick="toggleBroadcast()">🚀 START WALKING / GO LIVE</button>
+                
+                <div id="vendorStatusBox" style="margin-top: 10px; padding: 8px; background: #e9f7ef; border-radius: 6px; font-size: 12px; color: #155724; display: none; font-weight: bold;">
+                    🟢 YOU ARE LIVE! Broadcasting your position.
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        // REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
         const SUPABASE_URL = 'YOUR_SUPABASE_URL';
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Mode Switcher Logic
         function switchMode(mode) {
             if (mode === 'customer') {
                 document.getElementById('customerView').style.display = 'flex';
@@ -262,6 +288,32 @@
             }
         }
 
+        let selectedProduct = 'bread';
+        function selectProduct(code, btn) {
+            selectedProduct = code;
+            document.querySelectorAll('.prod-select-btn').forEach(b => {
+                b.style.border = '1px solid #ccc';
+                b.style.background = 'white';
+            });
+            btn.style.border = '2px solid #28a745';
+            btn.style.background = '#e9f7ef';
+            document.getElementById('selectedProductCode').value = code;
+        }
+
+        let timingMode = 'now';
+        function setTimingMode(mode) {
+            timingMode = mode;
+            if (mode === 'now') {
+                document.getElementById('modeNow').className = 'time-tab active';
+                document.getElementById('modeSchedule').className = 'time-tab';
+                document.getElementById('scheduleTimeContainer').style.display = 'none';
+            } else {
+                document.getElementById('modeNow').className = 'time-tab';
+                document.getElementById('modeSchedule').className = 'time-tab active';
+                document.getElementById('scheduleTimeContainer').style.display = 'block';
+            }
+        }
+
         // Customer Logic
         let customerLat = 5.6037; 
         let customerLon = -0.1870;
@@ -272,15 +324,7 @@
             const item = document.getElementById("wishItem").value;
             const time = document.getElementById("wishTime").value;
 
-            const { error } = await supabaseClient
-                .from('customer_wishlists')
-                .insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
-
-            if (error) {
-                alert("Error saving wishlist to cloud.");
-                return;
-            }
-
+            await supabaseClient.from('customer_wishlists').insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
             document.getElementById("wishStatus").innerHTML = `🔔 Saved! Alert set for ${item} around ${time}.`;
             alert(`Wishlist saved! We'll track ${item} vendors for you around ${time}.`);
         }
@@ -292,11 +336,7 @@
                     customerLon = position.coords.longitude;
                     document.getElementById("googleMap").src = `https://maps.google.com/maps?q=${customerLat},${customerLon}&z=15&output=embed`;
                     document.getElementById("myLocationText").innerHTML = `GPS Locked`;
-                }, error => {
-                    alert("GPS Error: " + error.message);
-                }, { enableHighAccuracy: true });
-            } else {
-                alert("Geolocation not supported.");
+                }, err => alert("GPS Error"), { enableHighAccuracy: true });
             }
         }
 
@@ -321,12 +361,9 @@
         }
 
         async function scanCloudRadar() {
-            const { data: activeHawkers, error } = await supabaseClient
-                .from('active_hawkers')
-                .select(`id, product_code, route_lane, vendor_note, lat, lon, products (product_name, comical_call, audio_url)`);
-
+            const { data: activeHawkers } = await supabaseClient.from('active_hawkers').select(`id, product_code, lat, lon, products (audio_url)`);
             const vendorListDiv = document.getElementById("vendorList");
-            if (error || !activeHawkers || activeHawkers.length === 0) {
+            if (!activeHawkers || activeHawkers.length === 0) {
                 vendorListDiv.innerHTML = "Scanning radar: No active vendors nearby.";
                 return;
             }
@@ -340,9 +377,7 @@
                 statusText += `${emoji} ${data.id} (${distance}m) ${isNearby ? '🚨 AT GATE! ' : ''} | `;
 
                 if (isNearby && !alertedHawkers[data.id]) {
-                    if (data.products && data.products.audio_url) {
-                        new Audio(data.products.audio_url).play().catch(e => {});
-                    }
+                    if (data.products && data.products.audio_url) new Audio(data.products.audio_url).play().catch(e => {});
                     alertedHawkers[data.id] = true;
                 } else if (!isNearby) {
                     alertedHawkers[data.id] = false;
@@ -354,66 +389,59 @@
         setInterval(scanCloudRadar, 3000);
         scanCloudRadar();
 
-        // Vendor Broadcast Logic
+        // Vendor Passive Tracking Logic (Zero Literacy Required)
         let isLive = false;
         let watchId = null;
         let pingInterval = null;
         let currentLat = 5.6037;
         let currentLon = -0.1870;
+        let vendorUniqueId = "Vendor_" + Math.floor(Math.random() * 9000 + 1000);
 
         async function toggleBroadcast() {
-            const vendorId = document.getElementById("vendorId").value.trim();
-            const productCode = document.getElementById("productCode").value;
-            const routeLane = document.getElementById("routeLane").value;
-            const departureTime = document.getElementById("departureTime").value;
-            const vendorNote = document.getElementById("vendorNote").value;
             const btn = document.getElementById("broadcastBtn");
             const statusBox = document.getElementById("vendorStatusBox");
-
-            if (!vendorId) {
-                alert("Please enter your Vendor Name or ID.");
-                return;
-            }
+            const productCode = selectedProduct;
+            const departureTime = timingMode === 'now' ? 'Now' : document.getElementById("departureTime").value;
 
             if (!isLive) {
                 isLive = true;
-                btn.innerText = "Stop Broadcasting";
-                btn.className = "action-btn stop-btn";
+                btn.innerText = "STOP WALKING (GO OFFLINE)";
+                btn.className = "big-btn stop";
                 statusBox.style.display = "block";
 
                 if (navigator.geolocation) {
-                    watchId = navigator.geolocation.watchPosition(position => {
-                        currentLat = position.coords.latitude;
-                        currentLon = position.coords.longitude;
+                    watchId = navigator.geolocation.watchPosition(pos => {
+                        currentLat = pos.coords.latitude;
+                        currentLon = pos.coords.longitude;
                     }, err => {}, { enableHighAccuracy: true });
                 }
 
-                sendDataToSupabase(vendorId, productCode, routeLane, departureTime, vendorNote);
+                sendVendorData(vendorUniqueId, productCode, departureTime);
                 pingInterval = setInterval(() => {
-                    sendDataToSupabase(vendorId, productCode, routeLane, departureTime, vendorNote);
+                    sendVendorData(vendorUniqueId, productCode, departureTime);
                 }, 5000);
 
             } else {
                 isLive = false;
-                btn.innerText = "Start Walking / Go Live";
-                btn.className = "action-btn";
+                btn.innerText = "🚀 START WALKING / GO LIVE";
+                btn.className = "big-btn";
                 statusBox.style.display = "none";
 
                 if (watchId) navigator.geolocation.clearWatch(watchId);
                 clearInterval(pingInterval);
 
-                await supabaseClient.from('active_hawkers').delete().eq('id', vendorId);
+                await supabaseClient.from('active_hawkers').delete().eq('id', vendorUniqueId);
                 alert("You are now offline.");
             }
         }
 
-        async function sendDataToSupabase(id, product_code, route_lane, departure_time, vendor_note) {
+        async function sendVendorData(id, product_code, dep_time) {
             await supabaseClient.from('active_hawkers').upsert([{
                 id: id,
                 product_code: product_code,
-                route_lane: route_lane,
-                departure_time: departure_time + ':00',
-                vendor_note: vendor_note,
+                route_lane: 'Auto-Tracked Lane',
+                departure_time: dep_time === 'Now' ? '00:00:00' : dep_time + ':00',
+                vendor_note: 'Active on route',
                 lat: currentLat,
                 lon: currentLon,
                 updated_at: new Date()
