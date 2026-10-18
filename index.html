@@ -2,29 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Store-to-Door Radar</title>
     
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f9;
-            padding: 10px;
+        * { box-sizing: border-box; }
+        body, html {
+            height: 100%;
             margin: 0;
-            overflow: hidden; /* Zero scrolling constraint */
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            overflow: hidden; /* Strict no-scroll screen lock */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        h2 { color: #333; margin: 2px 0; font-size: 18px; }
-        .subtitle { color: #666; font-size: 11px; margin-bottom: 6px; }
+        .app-header {
+            padding: 5px 10px;
+            text-align: center;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        h2 { color: #333; margin: 0; font-size: 15px; }
+        .subtitle { color: #666; font-size: 10px; margin: 0; }
         
         #map-container {
-            height: 40vh;
+            flex: 1;
             width: 100%;
-            border-radius: 10px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-            margin-bottom: 8px;
-            overflow: hidden;
             background: #ddd;
+            min-height: 180px;
         }
         iframe {
             width: 100%;
@@ -34,32 +41,30 @@
         
         .control-box {
             background: white;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 500px;
-            margin: 0 auto;
+            padding: 8px 10px;
+            box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
             text-align: left;
-            font-size: 12px;
+            font-size: 11px;
+            width: 100%;
         }
         .top-products-strip {
             display: flex;
-            gap: 5px;
-            margin-top: 6px;
+            gap: 4px;
+            margin-top: 3px;
             overflow-x: auto;
         }
         .product-badge {
             background: #e9f7ef;
             border: 1px solid #28a745;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
             font-weight: bold;
             color: #155724;
             white-space: nowrap;
         }
         button {
-            padding: 8px 10px;
+            padding: 8px;
             background: #007bff;
             color: white;
             border: none;
@@ -67,14 +72,14 @@
             cursor: pointer;
             font-size: 12px;
             width: 100%;
-            margin-top: 5px;
+            margin-top: 4px;
             font-weight: bold;
         }
         .wishlist-section {
-            margin-top: 6px;
+            margin-top: 4px;
             background: #fff3cd;
             border-left: 3px solid #ffc107;
-            padding: 6px;
+            padding: 4px 6px;
             border-radius: 4px;
         }
         .status-pill {
@@ -88,50 +93,52 @@
 </head>
 <body>
 
-    <h2>Store-to-Door Radar 📡</h2>
-    <div class="subtitle">Live Fleet & Wishlist Alerts</div>
+    <!-- Header -->
+    <div class="app-header">
+        <h2>Store-to-Door Radar 📡</h2>
+        <div class="subtitle">Live Fleet & Wishlist Alerts</div>
+    </div>
 
-    <!-- Map Container -->
+    <!-- Map Container (Fills middle space) -->
     <div id="map-container">
         <iframe id="googleMap" src="https://maps.google.com/maps?q=5.6037,-0.1870&z=15&output=embed"></iframe>
     </div>
 
-    <!-- Control & Dashboard Box (No Scroll) -->
+    <!-- Tightly Fitted Control Box (Zero Overflow) -->
     <div class="control-box">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span>📍 <b id="myLocationText">Accra Center</b></span>
             <span class="status-pill">🟢 Live</span>
         </div>
         
-        <!-- Most Purchased / Popular Strip -->
-        <div style="margin-top: 4px;">
-            <span style="font-size: 10px; color: #666;">🔥 Neighborhood Favorites:</span>
+        <!-- Favorites Strip -->
+        <div style="margin-top: 2px;">
             <div class="top-products-strip">
-                <span class="product-badge">🍞 Fresh Bread (Top 1)</span>
-                <span class="product-badge">🫘 Hot Beans (Trending)</span>
+                <span class="product-badge">🍞 Bread (Top)</span>
+                <span class="product-badge">🫘 Beans (Trending)</span>
                 <span class="product-badge">🧊 Ice Water</span>
             </div>
         </div>
 
-        <!-- Wishlist Alert for Future cravings (e.g. 2pm Beans) -->
+        <!-- Wishlist / Future Cravings -->
         <div class="wishlist-section">
-            <b>🔮 Wishlist / Future Alert:</b>
-            <div style="display: flex; gap: 5px; margin-top: 3px;">
-                <select id="wishItem" style="font-size:11px; padding:2px; flex:1;">
-                    <option value="beans">🫘 Hot Beans (Gari & Plantain)</option>
+            <div style="font-weight: bold; margin-bottom: 2px;">🔮 Future Craving Alert:</div>
+            <div style="display: flex; gap: 4px;">
+                <select id="wishItem" style="font-size:10px; padding:2px; flex:1;">
+                    <option value="beans">🫘 Hot Beans & Plantain</option>
                     <option value="bread">🍞 Fresh Bread</option>
                     <option value="chips">🍟 Plantain Chips</option>
                 </select>
-                <input type="time" id="wishTime" value="14:00" style="font-size:11px; padding:2px; width:70px;">
-                <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 8px; font-size:11px;">Set</button>
+                <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:2px; width:65px;">
+                <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 6px; font-size:10px;">Set</button>
             </div>
-            <div id="wishStatus" style="font-size: 10px; color: #856404; margin-top: 2px;">Status: No alert set for today.</div>
+            <div id="wishStatus" style="font-size: 9px; color: #856404; margin-top: 1px;">Status: Ready to sync with Supabase.</div>
         </div>
 
         <button onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
         
-        <div id="vendorList" style="font-size: 11px; color: #555; margin-top: 4px; max-height: 45px; overflow-y: auto;">
-            Scanning cloud radar for nearby vendors...
+        <div id="vendorList" style="font-size: 10px; color: #555; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Scanning cloud radar...
         </div>
     </div>
 
@@ -146,11 +153,23 @@
         const ALERT_RADIUS_METERS = 500;
         let alertedHawkers = {};
 
-        function setWishlist() {
+        async function setWishlist() {
             const item = document.getElementById("wishItem").value;
             const time = document.getElementById("wishTime").value;
-            document.getElementById("wishStatusinnerHTML = `🔔 Alert active! We'll notify you if a ${item} vendor nears your gate around ${time}.`;
-            alert(`Wishlist saved! We are logging vendor movement patterns to estimate when ${item} passes by around ${time}.`);
+
+            // Save directly to Supabase customer_wishlists table
+            const { error } = await supabaseClient
+                .from('customer_wishlists')
+                .insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
+
+            if (error) {
+                console.error(error);
+                alert("Error saving wishlist to cloud.");
+                return;
+            }
+
+            document.getElementById("wishStatus").innerHTML = `🔔 Saved! Alert set for ${item} around ${time}.`;
+            alert(`Wishlist saved to cloud! We'll track ${item} vendors for you around ${time}.`);
         }
 
         function setMyCurrentLocation() {
@@ -195,17 +214,17 @@
 
             const vendorListDiv = document.getElementById("vendorList");
             if (error || !activeHawkers || activeHawkers.length === 0) {
-                vendorListDiv.innerHTML = "No active vendors right now. (Wishlist standing by)";
+                vendorListDiv.innerHTML = "Scanning radar: No active vendors nearby.";
                 return;
             }
 
-            let htmlContent = "";
+            let statusText = "";
             activeHawkers.forEach(data => {
                 const distance = Math.round(getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon));
                 const isNearby = distance <= ALERT_RADIUS_METERS;
                 const emoji = getProductEmoji(data.product_code);
 
-                htmlContent += `<div>${emoji} <b>${data.id}</b> (${distance}m away) ${isNearby ? '<b>🚨 AT GATE!</b>' : ''}</div>`;
+                statusText += `${emoji} ${data.id} (${distance}m) ${isNearby ? '🚨 AT GATE! ' : ''} | `;
 
                 if (isNearby && !alertedHawkers[data.id]) {
                     if (data.products && data.products.audio_url) {
@@ -216,7 +235,7 @@
                     alertedHawkers[data.id] = false;
                 }
             });
-            vendorListDiv.innerHTML = htmlContent;
+            vendorListDiv.innerHTML = statusText;
         }
 
         setInterval(scanCloudRadar, 3000);
