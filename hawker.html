@@ -65,6 +65,9 @@
             color: #333;
         }
     </style>
+
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -95,7 +98,16 @@
     <div id="status">Status: Offline (Tap above when ready)</div>
 
     <script>
+        // REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
+        const SUPABASE_URL = 'https://mhexovvruulnfnvtvdfq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1oZXhvdnZydXVsbmZudnR2ZGZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzMTMwNjAsImV4cCI6MjEwNzg4OTA2MH0.rDrrHXvBrMIENBbyNKrsMgxgBr4YiEXsDyATVjJK3Xg';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         let watchId = null;
+        let upsertInterval = null;
+        let currentLat = null;
+        let currentLon = null;
+
         const btn = document.getElementById("toggleBtn");
         const statusDiv = document.getElementById("status");
 
@@ -113,7 +125,7 @@
 
         function startTracking() {
             const hawkerId = document.getElementById("hawkerName").value.trim();
-            const productType = document.getElementById("productType").value;
+            const productCode = document.getElementById("productType").value;
             const routeLane = document.getElementById("routeLane").value.trim();
             const vendorNote = document.getElementById("vendorNote").value.trim();
 
@@ -123,57 +135,80 @@
             }
 
             if (navigator.geolocation) {
-                // Play silent audio to trick mobile OS into treating this tab like an active media player (keeps CPU awake in pocket)
                 silentAudio.play().catch(err => console.log("Audio wake lock active"));
 
                 btn.innerText = "Stop Walking / Pocket Mode";
                 btn.classList.add("active");
-                statusDiv.innerText = "Status: 🟢 Pocket Mode Active (Broadcasting live)";
+                statusDiv.innerText = "Status: 🟢 Pocket Mode Active (Broadcasting to cloud)";
 
-                // Start continuous GPS watch with high accuracy and zero age cache
+                // Start continuous GPS watch
                 watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        
-                        // Save richer state to local storage for customer radar
-                        let activeHawkers = JSON.parse(localStorage.getItem('activeHawkers') || '{}');
-                        activeHawkers[hawkerId] = {
-                            lat,
-                            lon,
-                            productType,
-                            routeLane,
-                            vendorNote,
-                            lastUpdated: new Date().toLocaleTimeString()
-                        };
-                        localStorage.setItem('activeHawkers', JSON.stringify(activeHawkers));
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
+                        pushToSupabase(hawkerId, productCode, routeLane, vendorNote);
                     },
                     (error) => {
                         statusDiv.innerText = `GPS Error: ${error.message}`;
                     },
                     { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                 );
+
+                // Periodic heartbeat to refresh 'updated_at' timestamp so the 60s cleanup trigger doesn't wipe active vendors
+                upsertInterval = setInterval(() => {
+                    if (currentLat !== null && currentLon !== null) {
+                        pushToSupabase(hawkerId, productCode, routeLane, vendorNote);
+                    }
+                }, 10000);
+
             } else {
                 alert("Geolocation is not supported by your phone browser.");
             }
         }
 
-        function stopTracking() {
+        async function pushToSupabase(id, product_code, route_lane, vendor_note) {
+            const { error } = await supabaseClient
+                .from('active_hawkers')
+                .upsert({
+                    id: id,
+                    product_code: product_code,
+                    route_lane: route_lane,
+                    vendor_note: vendor_note,
+                    lat: currentLat,
+                    lon: currentLon,
+                    updated_at: new Date()
+                });
+
+            if (error) {
+                console.error("Supabase sync error:", error.message);
+            }
+        }
+
+        async function stopTracking() {
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
-                
-                // Pause silent audio loop
-                silentAudio.pause();
-
-                const hawkerId = document.getElementById("hawkerName").value.trim();
-                let activeHawkers = JSON.parse(localStorage.getItem('activeHawkers') || '{}');
-                delete activeHawkers[hawkerId];
-                localStorage.setItem('activeHawkers', JSON.stringify(activeHawkers));
             }
+            if (upsertInterval !== null) {
+                clearInterval(upsertInterval);
+                upsertInterval = null;
+            }
+            
+            silentAudio.pause();
+
+            const hawkerId = document.getElementById("hawkerName").value.trim();
+            
+            // Remove record immediately from Supabase on stop
+            await supabaseClient
+                .from('active_hawkers')
+                .delete()
+                .eq('id', hawkerId);
+
             btn.innerText = "Start Walking";
             btn.classList.remove("active");
             statusDiv.innerText = "Status: Offline";
+            currentLat = null;
+            currentLon = null;
         }
     </script>
 </body>
