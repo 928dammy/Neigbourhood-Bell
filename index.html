@@ -25,7 +25,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
             margin-bottom: 15px;
-            background: #e5e3df; 
+            background: #f0f0f0; 
         }
         
         .control-box {
@@ -93,12 +93,13 @@
         // Initialize Map
         const map = L.map('map').setView([customerLat, customerLon], 14);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Using CartoDB Positron tiles (guaranteed high availability on mobile networks)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap'
+            attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
         }).addTo(map);
 
-        // Fix mobile grey box rendering issue by forcing a size refresh
+        // Fix mobile layout sizing
         setTimeout(() => {
             map.invalidateSize();
         }, 300);
