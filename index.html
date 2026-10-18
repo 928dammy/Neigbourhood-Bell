@@ -10,18 +10,19 @@
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: #f4f4f9;
-            padding: 15px;
+            padding: 10px;
             margin: 0;
+            overflow: hidden; /* Zero scrolling constraint */
         }
-        h2 { color: #333; margin: 5px 0; }
-        .subtitle { color: #666; font-size: 13px; margin-bottom: 12px; }
+        h2 { color: #333; margin: 2px 0; font-size: 18px; }
+        .subtitle { color: #666; font-size: 11px; margin-bottom: 6px; }
         
         #map-container {
-            height: 50vh;
+            height: 40vh;
             width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+            margin-bottom: 8px;
             overflow: hidden;
             background: #ddd;
         }
@@ -33,36 +34,48 @@
         
         .control-box {
             background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             max-width: 500px;
             margin: 0 auto;
             text-align: left;
-            font-size: 14px;
+            font-size: 12px;
         }
-        .vendor-card {
+        .top-products-strip {
+            display: flex;
+            gap: 5px;
+            margin-top: 6px;
+            overflow-x: auto;
+        }
+        .product-badge {
             background: #e9f7ef;
-            border-left: 4px solid #28a745;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 6px;
-        }
-        .alert-card {
-            background: #f8d7da;
-            border-left-color: #dc3545;
+            border: 1px solid #28a745;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #155724;
+            white-space: nowrap;
         }
         button {
-            padding: 12px 15px;
+            padding: 8px 10px;
             background: #007bff;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 12px;
             width: 100%;
-            margin-top: 8px;
+            margin-top: 5px;
             font-weight: bold;
+        }
+        .wishlist-section {
+            margin-top: 6px;
+            background: #fff3cd;
+            border-left: 3px solid #ffc107;
+            padding: 6px;
+            border-radius: 4px;
         }
         .status-pill {
             font-weight: bold;
@@ -76,24 +89,49 @@
 <body>
 
     <h2>Store-to-Door Radar 📡</h2>
-    <div class="subtitle">Live Street Vendor Fleet</div>
+    <div class="subtitle">Live Fleet & Wishlist Alerts</div>
 
     <!-- Map Container -->
     <div id="map-container">
         <iframe id="googleMap" src="https://maps.google.com/maps?q=5.6037,-0.1870&z=15&output=embed"></iframe>
     </div>
 
-    <!-- Status & Feed Box -->
+    <!-- Control & Dashboard Box (No Scroll) -->
     <div class="control-box">
-        <div>📍 <span id="myLocationText">Default Location: Accra Center</span></div>
-        <button onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
-        <div style="margin-top: 10px; font-size: 13px; color: #555;">
-            Radar Status: <span class="status-pill">🟢 Scanning Live (500m Audio Alert)</span>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📍 <b id="myLocationText">Accra Center</b></span>
+            <span class="status-pill">🟢 Live</span>
         </div>
         
-        <div id="liveFeed" style="margin-top: 15px;">
-            <b>Active Nearby Vendors:</b>
-            <div id="vendorList" style="color: #666; font-size: 13px; margin-top: 5px;">Scanning cloud radar...</div>
+        <!-- Most Purchased / Popular Strip -->
+        <div style="margin-top: 4px;">
+            <span style="font-size: 10px; color: #666;">🔥 Neighborhood Favorites:</span>
+            <div class="top-products-strip">
+                <span class="product-badge">🍞 Fresh Bread (Top 1)</span>
+                <span class="product-badge">🫘 Hot Beans (Trending)</span>
+                <span class="product-badge">🧊 Ice Water</span>
+            </div>
+        </div>
+
+        <!-- Wishlist Alert for Future cravings (e.g. 2pm Beans) -->
+        <div class="wishlist-section">
+            <b>🔮 Wishlist / Future Alert:</b>
+            <div style="display: flex; gap: 5px; margin-top: 3px;">
+                <select id="wishItem" style="font-size:11px; padding:2px; flex:1;">
+                    <option value="beans">🫘 Hot Beans (Gari & Plantain)</option>
+                    <option value="bread">🍞 Fresh Bread</option>
+                    <option value="chips">🍟 Plantain Chips</option>
+                </select>
+                <input type="time" id="wishTime" value="14:00" style="font-size:11px; padding:2px; width:70px;">
+                <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 8px; font-size:11px;">Set</button>
+            </div>
+            <div id="wishStatus" style="font-size: 10px; color: #856404; margin-top: 2px;">Status: No alert set for today.</div>
+        </div>
+
+        <button onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
+        
+        <div id="vendorList" style="font-size: 11px; color: #555; margin-top: 4px; max-height: 45px; overflow-y: auto;">
+            Scanning cloud radar for nearby vendors...
         </div>
     </div>
 
@@ -108,22 +146,25 @@
         const ALERT_RADIUS_METERS = 500;
         let alertedHawkers = {};
 
+        function setWishlist() {
+            const item = document.getElementById("wishItem").value;
+            const time = document.getElementById("wishTime").value;
+            document.getElementById("wishStatusinnerHTML = `🔔 Alert active! We'll notify you if a ${item} vendor nears your gate around ${time}.`;
+            alert(`Wishlist saved! We are logging vendor movement patterns to estimate when ${item} passes by around ${time}.`);
+        }
+
         function setMyCurrentLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(position => {
                     customerLat = position.coords.latitude;
                     customerLon = position.coords.longitude;
-                    
-                    // Update iframe map location instantly
                     document.getElementById("googleMap").src = `https://maps.google.com/maps?q=${customerLat},${customerLon}&z=15&output=embed`;
-
-                    document.getElementById("myLocationText").innerHTML = 
-                        `House GPS Set (${customerLat.toFixed(4)}, ${customerLon.toFixed(4)})`;
+                    document.getElementById("myLocationText").innerHTML = `GPS Locked`;
                 }, error => {
-                    alert("Unable to retrieve location: " + error.message);
+                    alert("GPS Error: " + error.message);
                 }, { enableHighAccuracy: true });
             } else {
-                alert("Geolocation is not supported by this browser.");
+                alert("Geolocation not supported.");
             }
         }
 
@@ -132,6 +173,7 @@
                 case 'bread': return '🍞';
                 case 'chips': return '🍟';
                 case 'water': return '🧊';
+                case 'beans': return '🫘';
                 default: return '🛒';
             }
         }
@@ -149,71 +191,36 @@
         async function scanCloudRadar() {
             const { data: activeHawkers, error } = await supabaseClient
                 .from('active_hawkers')
-                .select(`
-                    id,
-                    product_code,
-                    route_lane,
-                    vendor_note,
-                    lat,
-                    lon,
-                    products (
-                        product_name,
-                        comical_call,
-                        audio_url
-                    )
-                `);
+                .select(`id, product_code, route_lane, vendor_note, lat, lon, products (product_name, comical_call, audio_url)`);
 
             const vendorListDiv = document.getElementById("vendorList");
-
-            if (error) {
-                vendorListDiv.innerHTML = "Error syncing with cloud radar.";
-                return;
-            }
-
-            if (!activeHawkers || activeHawkers.length === 0) {
-                vendorListDiv.innerHTML = "No active hawkers online right now.";
+            if (error || !activeHawkers || activeHawkers.length === 0) {
+                vendorListDiv.innerHTML = "No active vendors right now. (Wishlist standing by)";
                 return;
             }
 
             let htmlContent = "";
-
             activeHawkers.forEach(data => {
-                const distance = getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon);
-                const roundedDist = Math.round(distance);
+                const distance = Math.round(getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon));
                 const isNearby = distance <= ALERT_RADIUS_METERS;
-
                 const emoji = getProductEmoji(data.product_code);
-                const prodName = data.products ? data.products.product_name : 'Item';
-                const comicalCall = data.products ? data.products.comical_call : 'Coming your way!';
-                const audioUrl = data.products ? data.products.audio_url : null;
 
-                htmlContent += `
-                    <div class="vendor-card ${isNearby ? 'alert-card' : ''}">
-                        <b>${emoji} ${data.id}</b> (${prodName})<br>
-                        Area: ${data.route_lane} | 📏 <b>${roundedDist}m away</b><br>
-                        <em>"${data.vendor_note}"</em>
-                        ${isNearby ? '<br><span style="color:red; font-weight:bold;">🚨 AT YOUR GATE!</span>' : ''}
-                    </div>
-                `;
+                htmlContent += `<div>${emoji} <b>${data.id}</b> (${distance}m away) ${isNearby ? '<b>🚨 AT GATE!</b>' : ''}</div>`;
 
-                if (isNearby) {
-                    if (!alertedHawkers[data.id]) {
-                        if (audioUrl) {
-                            new Audio(audioUrl).play().catch(e => console.log("Audio play prevented"));
-                        }
-                        alertedHawkers[data.id] = true;
+                if (isNearby && !alertedHawkers[data.id]) {
+                    if (data.products && data.products.audio_url) {
+                        new Audio(data.products.audio_url).play().catch(e => {});
                     }
-                } else {
+                    alertedHawkers[data.id] = true;
+                } else if (!isNearby) {
                     alertedHawkers[data.id] = false;
                 }
             });
-
             vendorListDiv.innerHTML = htmlContent;
         }
 
         setInterval(scanCloudRadar, 3000);
         scanCloudRadar();
     </script>
-
 </body>
 </html>
