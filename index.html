@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Store-to-Door Radar & Vendor Portal</title>
     
-    <!-- Leaflet CSS for Free Uber-Style Map Engine -->
+    <!-- Leaflet CSS for Free Map Engine -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
@@ -66,7 +66,6 @@
             position: relative;
         }
         
-        /* Map Container */
         #map {
             flex: 1;
             width: 100%;
@@ -74,6 +73,34 @@
             min-height: 100px;
             position: relative;
             z-index: 1;
+        }
+
+        /* 3D Street View Modal Overlay */
+        #streetViewModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+        }
+        #streetViewContainer {
+            flex: 1;
+            width: 100%;
+            background: #000;
+        }
+        .close-3d-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            text-align: center;
         }
 
         .control-box {
@@ -86,7 +113,6 @@
             z-index: 5;
         }
 
-        /* Neighborhood Dispatch Bulletin */
         .dispatch-bulletin {
             background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
             border-left: 3px solid #1976d2;
@@ -100,7 +126,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Vendor Radar Feed Box */
         .radar-feed-box {
             margin-top: 2px;
             background: #f8f9fa;
@@ -115,12 +140,17 @@
             justify-content: space-between;
             align-items: center;
             background: white;
-            padding: 3px 5px;
+            padding: 4px 6px;
             margin-bottom: 2px;
             border-radius: 3px;
-            border-left: 3px solid #28a745;
+            border-left: 4px solid #28a745;
             font-size: 9px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .vendor-radar-item:hover {
+            background: #e9f7ef;
         }
         .vendor-radar-item.at-gate {
             border-left-color: #dc3545;
@@ -185,6 +215,20 @@
             cursor: pointer;
         }
         .time-tab.active { background: #28a745; color: white; border-color: #28a745; }
+        
+        .cat-toggle { display: flex; gap: 4px; margin-bottom: 6px; }
+        .cat-tab {
+            flex: 1;
+            padding: 5px;
+            text-align: center;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .cat-tab.active { background: #2b8a3e; color: white; }
+
         .prod-select-btn { padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 12px; text-align: center; }
         .wishlist-section {
             margin-top: 2px;
@@ -217,6 +261,16 @@
     <div id="customerView" class="view-section" style="display: flex;">
         <div id="map"></div>
 
+        <!-- 3D Street View Inspector Modal -->
+        <div id="streetViewModal">
+            <div style="background:#222; color:white; padding:8px; font-size:11px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+                <span id="modalTitle">🕶️ 3D Street View Inspector</span>
+                <span style="font-size:9px; color:#28a745;">Live Walking View</span>
+            </div>
+            <iframe id="streetViewFrame" style="flex:1; width:100%; border:none;" src=""></iframe>
+            <button class="close-3d-btn" onclick="close3DView()">✕ Close 3D View & Return to Radar</button>
+        </div>
+
         <div class="control-box">
             <div id="neighborhoodBulletin" class="dispatch-bulletin">
                 📰 <b>Neighborhood Dispatch:</b> Scanning schedules...
@@ -233,12 +287,20 @@
             </div>
 
             <div class="wishlist-section">
-                <div style="font-weight: bold; margin-bottom: 1px;">🔮 Future Craving Alert:</div>
+                <div style="font-weight: bold; margin-bottom: 1px;">🔮 Future Craving / Need Alert:</div>
                 <div style="display: flex; gap: 3px;">
                     <select id="wishItem" style="font-size:9px; padding:2px; flex:1;">
-                        <option value="beans">🫘 Hot Beans & Plantain</option>
-                        <option value="bread">🍞 Fresh Bread</option>
-                        <option value="chips">🍟 Plantain Chips</option>
+                        <optgroup label="🍔 Consumables">
+                            <option value="beans">🫘 Hot Beans & Plantain</option>
+                            <option value="bread">🍞 Fresh Bread</option>
+                            <option value="chips">🍟 Plantain Chips</option>
+                            <option value="water">🧊 Ice Water</option>
+                        </optgroup>
+                        <optgroup label="🛍️ Non-Consumables">
+                            <option value="charger">🔌 Phone Charger & Cables</option>
+                            <option value="slippers">🩴 Slippers / Sandals</option>
+                            <option value="tissue">🧻 Toilet Tissue / Wipes</option>
+                        </optgroup>
                     </select>
                     <input type="time" id="wishTime" value="14:00" style="font-size:9px; padding:2px; width:50px;">
                     <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 5px; font-size:9px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">Set</button>
@@ -255,12 +317,25 @@
             
             <div class="card-box">
                 <div style="font-size: 13px; font-weight: bold; color: #2b8a3e; margin-bottom: 6px;">🎯 Step 1: Pick What You Are Selling</div>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                
+                <div class="cat-toggle">
+                    <div id="catConsumable" class="cat-tab active" onclick="switchCategory('consumable')">🍔 Consumables</div>
+                    <div id="catGoods" class="cat-tab" onclick="switchCategory('goods')">🛍️ Non-Consumables</div>
+                </div>
+
+                <div id="gridConsumable" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
                     <button type="button" id="btn_bread" class="prod-select-btn" onclick="selectProduct('bread')" style="border: 2px solid #28a745; background: #e9f7ef; color: #155724;">🍞 Bread</button>
                     <button type="button" id="btn_beans" class="prod-select-btn" onclick="selectProduct('beans')" style="border: 1px solid #ced4da; background: white; color: #333;">🫘 Beans</button>
                     <button type="button" id="btn_chips" class="prod-select-btn" onclick="selectProduct('chips')" style="border: 1px solid #ced4da; background: white; color: #333;">🍟 Chips</button>
                     <button type="button" id="btn_water" class="prod-select-btn" onclick="selectProduct('water')" style="border: 1px solid #ced4da; background: white; color: #333;">🧊 Water</button>
                 </div>
+
+                <div id="gridGoods" style="display: none; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                    <button type="button" id="btn_charger" class="prod-select-btn" onclick="selectProduct('charger')" style="border: 1px solid #ced4da; background: white; color: #333;">🔌 Charger</button>
+                    <button type="button" id="btn_slippers" class="prod-select-btn" onclick="selectProduct('slippers')" style="border: 1px solid #ced4da; background: white; color: #333;">🩴 Slippers</button>
+                    <button type="button" id="btn_tissue" class="prod-select-btn" onclick="selectProduct('tissue')" style="border: 1px solid #ced4da; background: white; color: #333;">🧻 Tissue</button>
+                </div>
+
                 <input type="hidden" id="selectedProductCode" value="bread">
             </div>
 
@@ -298,7 +373,6 @@
             console.log("Supabase initialization warning");
         }
 
-        // Leaflet Map Engine Initialization
         let map;
         let customerMarker;
         let perimeterCircle;
@@ -309,17 +383,14 @@
             const accraCenter = [5.6037, -0.1870];
             map = L.map('map', { zoomControl: false }).setView(accraCenter, 15);
 
-            // OpenStreetMap tile layer (Free, no API key needed)
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            // Customer Home Marker
             customerMarker = L.marker(accraCenter).addTo(map)
                 .bindPopup("<b>My House</b>");
 
-            // 500m Perimeter Beacon Circle
             perimeterCircle = L.circle(accraCenter, {
                 color: '#28a745',
                 fillColor: '#28a745',
@@ -329,6 +400,18 @@
         }
 
         window.onload = initMap;
+
+        function open3DStreetView(lat, lon, vendorName, emoji) {
+            document.getElementById('modalTitle').innerHTML = `🕶️ 3D View: ${emoji} ${vendorName} walking toward you`;
+            const embedUrl = `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lon}&cbp=12,0,0,0,5&output=embed`;
+            document.getElementById('streetViewFrame').src = embedUrl;
+            document.getElementById('streetViewModal').style.display = 'flex';
+        }
+
+        function close3DView() {
+            document.getElementById('streetViewModal').style.display = 'none';
+            document.getElementById('streetViewFrame').src = '';
+        }
 
         function switchMode(mode) {
             if (mode === 'customer') {
@@ -345,19 +428,37 @@
             }
         }
 
+        function switchCategory(cat) {
+            if (cat === 'consumable') {
+                document.getElementById('catConsumable').className = 'cat-tab active';
+                document.getElementById('catGoods').className = 'cat-tab';
+                document.getElementById('gridConsumable').style.display = 'grid';
+                document.getElementById('gridGoods').style.display = 'none';
+                selectProduct('bread');
+            } else {
+                document.getElementById('catConsumable').className = 'cat-tab';
+                document.getElementById('catGoods').className = 'cat-tab active';
+                document.getElementById('gridConsumable').style.display = 'none';
+                document.getElementById('gridGoods').style.display = 'grid';
+                selectProduct('charger');
+            }
+        }
+
         let selectedProduct = 'bread';
         function selectProduct(code) {
             selectedProduct = code;
-            ['bread', 'beans', 'chips', 'water'].forEach(p => {
+            ['bread', 'beans', 'chips', 'water', 'charger', 'slippers', 'tissue'].forEach(p => {
                 const btn = document.getElementById('btn_' + p);
-                if (p === code) {
-                    btn.style.border = '2px solid #28a745';
-                    btn.style.background = '#e9f7ef';
-                    btn.style.color = '#155724';
-                } else {
-                    btn.style.border = '1px solid #ced4da';
-                    btn.style.background = 'white';
-                    btn.style.color = '#333';
+                if (btn) {
+                    if (p === code) {
+                        btn.style.border = '2px solid #28a745';
+                        btn.style.background = '#e9f7ef';
+                        btn.style.color = '#155724';
+                    } else {
+                        btn.style.border = '1px solid #ced4da';
+                        btn.style.background = 'white';
+                        btn.style.color = '#333';
+                    }
                 }
             });
             document.getElementById('selectedProductCode').value = code;
@@ -384,7 +485,7 @@
 
         const dummyVendors = [
             { id: "Auntie_Muni", product_code: "beans", lat: 5.6042, lon: -0.1865, departure_time: "13:30:00" },
-            { id: "Uncle_Kofi", product_code: "bread", lat: 5.6028, lon: -0.1882, departure_time: "14:00:00" },
+            { id: "Kwame_Store", product_code: "charger", lat: 5.6028, lon: -0.1882, departure_time: "14:00:00" },
             { id: "Yaw_Water", product_code: "water", lat: 5.6055, lon: -0.1875, departure_time: "14:15:00" }
         ];
 
@@ -431,7 +532,10 @@
                 case 'chips': return '🍟';
                 case 'water': return '🧊';
                 case 'beans': return '🫘';
-                default: return '🛒';
+                case 'charger': return '🔌';
+                case 'slippers': return '🩴';
+                case 'tissue': return '🧻';
+                default: return '🛍️';
             }
         }
 
@@ -443,6 +547,27 @@
                       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                       Math.sin(dLon/2) * Math.sin(dLon/2);
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // Uber-style smooth linear marker animation (interpolation)
+        function animateMarkerMovement(marker, targetLatLng, duration = 2000) {
+            const startLatLng = marker.getLatLng();
+            const startTime = performance.now();
+
+            function frame(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                const currentLat = startLatLng.lat + (targetLatLng[0] - startLatLng.lat) * progress;
+                const currentLng = startLatLng.lng + (targetLatLng[1] - startLatLng.lng) * progress;
+
+                marker.setLatLng([currentLat, currentLng]);
+
+                if (progress < 1) {
+                    requestAnimationFrame(frame);
+                }
+            }
+            requestAnimationFrame(frame);
         }
 
         async function scanCloudRadar() {
@@ -472,7 +597,6 @@
                 const emoji = getProductEmoji(data.product_code);
                 const vendorLatLng = [data.lat, data.lon];
 
-                // --- UBER-STYLE MOVING MARKER & BREADCRUMB TRAIL ---
                 if (!activeMapMarkers[data.id]) {
                     const customIcon = L.divIcon({
                         className: 'custom-vendor-pin',
@@ -481,13 +605,13 @@
                     });
 
                     activeMapMarkers[data.id] = L.marker(vendorLatLng, { icon: customIcon }).addTo(map)
-                        .bindPopup(`<b>${data.id}</b><br>${emoji} Selling now`);
+                        .on('click', () => open3DStreetView(data.lat, data.lon, data.id, emoji));
                     
                     vendorPathTrails[data.id] = [vendorLatLng];
                 } else {
-                    activeMapMarkers[data.id].setLatLng(vendorLatLng);
+                    // Smoothly animate marker gliding towards the new GPS position
+                    animateMarkerMovement(activeMapMarkers[data.id], vendorLatLng, 2500);
                     
-                    // Add to breadcrumb path and draw Uber-style trail line
                     vendorPathTrails[data.id].push(vendorLatLng);
                     if (vendorPathTrails[data.id].length > 25) vendorPathTrails[data.id].shift();
 
@@ -515,8 +639,8 @@
                     let itemClass = isAtGate ? "vendor-radar-item at-gate" : "vendor-radar-item";
 
                     htmlContent += `
-                        <div class="${itemClass}">
-                            <div><b>${emoji} ${data.id}</b> <span style="font-size:8px; color:#666;">(${distance}m)</span></div>
+                        <div class="${itemClass}" onclick="open3DStreetView(${data.lat}, ${data.lon}, '${data.id}', '${emoji}')">
+                            <div><b>${emoji} ${data.id}</b> <span style="font-size:8px; color:#666;">(${distance}m)</span> - 🕶️ Tap for 3D</div>
                             <div style="font-weight:bold; color:${isAtGate ? '#dc3545' : '#28a745'};">${statusMsg}</div>
                         </div>
                     `;
@@ -526,7 +650,6 @@
                 bulletinText += `📢 <b>${data.id}</b> (${emoji}) scheduled around <b>${formattedTime}</b>. `;
             });
 
-            // Remove offline markers
             Object.keys(activeMapMarkers).forEach(id => {
                 if (!currentActiveIds.includes(id)) {
                     map.removeLayer(activeMapMarkers[id]);
@@ -541,7 +664,6 @@
 
         setInterval(scanCloudRadar, 3000);
 
-        // Vendor Passive Tracking Logic
         let isLive = false;
         let watchId = null;
         let pingInterval = null;
