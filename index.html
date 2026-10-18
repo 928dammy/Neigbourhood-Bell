@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Store-to-Door Radar & Vendor Portal</title>
+    <title>Store-to-Door 3D Spatial Radar</title>
     
-    <!-- Leaflet CSS for Free Map Engine -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Three.js for 3D Isometric World Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -14,47 +16,48 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
         .app-header {
-            padding: 4px 8px;
+            padding: 8px 12px;
             text-align: center;
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
             z-index: 10;
         }
-        h2 { color: #333; margin: 0; font-size: 14px; }
-        .subtitle { color: #666; font-size: 9px; margin: 0; }
+        h2 { color: #f8fafc; margin: 0; font-size: 15px; }
+        .subtitle { color: #94a3b8; font-size: 10px; margin: 0; }
         
         /* Mode Switcher */
         .mode-switcher {
             display: flex;
-            background: #e9ecef;
-            padding: 2px;
-            margin: 3px 8px 0 8px;
-            border-radius: 6px;
+            background: #334155;
+            padding: 3px;
+            margin: 6px 12px 0 12px;
+            border-radius: 8px;
         }
         .mode-btn {
             flex: 1;
-            padding: 4px;
+            padding: 6px;
             text-align: center;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 6px;
             border: none;
             background: transparent;
-            color: #555;
+            color: #94a3b8;
             z-index: 5;
         }
         .mode-btn.active {
-            background: #007bff;
+            background: #3b82f6;
             color: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .view-section {
@@ -62,107 +65,87 @@
             display: flex;
             flex-direction: column;
             width: 100%;
-            height: calc(100% - 55px);
+            height: calc(100% - 65px);
             position: relative;
         }
         
-        #map {
+        /* 3D Canvas Container */
+        #canvas3D-container {
             flex: 1;
             width: 100%;
-            background: #e5e3df;
-            min-height: 100px;
+            background: #0f172a;
             position: relative;
-            z-index: 1;
+            overflow: hidden;
         }
+        canvas { display: block; width: 100%; height: 100%; }
 
-        /* 3D Street View Modal Overlay */
-        #streetViewModal {
+        /* Floating 3D Action Card (Lagos Life Style) */
+        .floating-card {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            z-index: 100;
-            display: none;
-            flex-direction: column;
-        }
-        #streetViewContainer {
-            flex: 1;
-            width: 100%;
-            background: #000;
-        }
-        .close-3d-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 10px;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: pointer;
-            text-align: center;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 20;
         }
 
         .control-box {
-            background: white;
-            padding: 6px 8px;
-            box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
+            background: #1e293b;
+            padding: 10px 12px;
+            border-top: 1px solid #334155;
             text-align: left;
-            font-size: 10px;
+            font-size: 11px;
             width: 100%;
-            z-index: 5;
+            z-index: 20;
         }
 
         .dispatch-bulletin {
-            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-            border-left: 3px solid #1976d2;
-            padding: 3px 6px;
-            border-radius: 4px;
-            margin-bottom: 3px;
-            font-size: 9px;
-            color: #0d47a1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            background: rgba(59, 130, 246, 0.15);
+            border-left: 3px solid #3b82f6;
+            padding: 6px 8px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 10px;
+            color: #93c5fd;
         }
 
         .radar-feed-box {
-            margin-top: 2px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            max-height: 65px;
+            margin-top: 4px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            max-height: 75px;
             overflow-y: auto;
-            padding: 3px;
+            padding: 4px;
         }
         .vendor-radar-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: white;
-            padding: 4px 6px;
-            margin-bottom: 2px;
-            border-radius: 3px;
-            border-left: 4px solid #28a745;
-            font-size: 9px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            background: #1e293b;
+            padding: 6px 8px;
+            margin-bottom: 3px;
+            border-radius: 5px;
+            border-left: 4px solid #10b981;
+            font-size: 10px;
             cursor: pointer;
-            transition: background 0.2s;
-        }
-        .vendor-radar-item:hover {
-            background: #e9f7ef;
         }
         .vendor-radar-item.at-gate {
-            border-left-color: #dc3545;
-            background: #fff5f5;
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
         }
         
-        /* Vendor View Styles */
+        /* Vendor Portal View Styles */
         .vendor-container {
             flex: 1;
-            padding: 10px;
+            padding: 15px;
             overflow-y: auto;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9f7ef 100%);
+            background: #0f172a;
             text-align: left;
             max-width: 500px;
             margin: 0 auto;
@@ -170,144 +153,143 @@
             z-index: 5;
         }
         .card-box {
-            background: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-            margin-bottom: 8px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
         }
-        label { font-weight: bold; font-size: 10px; display: block; margin-top: 4px; color: #333; }
+        label { font-weight: bold; font-size: 11px; display: block; margin-top: 6px; color: #cbd5e1; }
         input, select, textarea {
             width: 100%;
-            padding: 6px;
-            margin-top: 2px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 11px;
+            padding: 8px;
+            margin-top: 4px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
         }
         .big-btn {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            padding: 14px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 3px 8px rgba(40,167,69,0.3);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
             text-align: center;
         }
         .big-btn.stop {
-            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
-            box-shadow: 0 3px 8px rgba(220,53,69,0.3);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
-        .timing-toggle { display: flex; gap: 4px; margin-top: 4px; }
+        .timing-toggle { display: flex; gap: 6px; margin-top: 6px; }
         .time-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+        .time-tab.active { background: #10b981; color: white; border-color: #10b981; }
+        
+        .cat-toggle { display: flex; gap: 6px; margin-bottom: 8px; }
+        .cat-tab {
             flex: 1;
             padding: 6px;
             text-align: center;
-            background: #f1f3f5;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
+            background: #0f172a;
+            border-radius: 6px;
             font-size: 10px;
             font-weight: bold;
             cursor: pointer;
+            color: #94a3b8;
+            border: 1px solid #475569;
         }
-        .time-tab.active { background: #28a745; color: white; border-color: #28a745; }
-        
-        .cat-toggle { display: flex; gap: 4px; margin-bottom: 6px; }
-        .cat-tab {
-            flex: 1;
-            padding: 5px;
-            text-align: center;
-            background: #e9ecef;
-            border-radius: 4px;
-            font-size: 9px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .cat-tab.active { background: #2b8a3e; color: white; }
+        .cat-tab.active { background: #3b82f6; color: white; border-color: #3b82f6; }
 
-        .prod-select-btn { padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 12px; text-align: center; }
+        .prod-select-btn { padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; text-align: center; background: #1e293b; color: #cbd5e1; border: 1px solid #475569; }
         .wishlist-section {
-            margin-top: 2px;
-            background: #fff3cd;
-            border-left: 3px solid #ffc107;
-            padding: 3px 5px;
-            border-radius: 3px;
+            margin-top: 4px;
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 3px solid #f59e0b;
+            padding: 6px 8px;
+            border-radius: 6px;
         }
-        .status-pill { font-weight: bold; color: #28a745; }
+        .status-pill { font-weight: bold; color: #10b981; }
     </style>
-
-    <!-- Supabase & Leaflet JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
     <!-- Header -->
     <div class="app-header">
-        <h2>Store-to-Door Radar 📡</h2>
-        <div class="subtitle">Live Street Fleet & Smart Cravings</div>
+        <h2>Store-to-Door 3D Spatial Radar ⚡</h2>
+        <div class="subtitle">Live Isometric Street Fleet & Smart Cravings</div>
         
         <div class="mode-switcher">
-            <button id="customerTabBtn" class="mode-btn active" onclick="switchMode('customer')">🏠 Customer Radar</button>
+            <button id="customerTabBtn" class="mode-btn active" onclick="switchMode('customer')">🌐 3D Spatial World</button>
             <button id="vendorTabBtn" class="mode-btn" onclick="switchMode('vendor')">🛵 Vendor Portal</button>
         </div>
     </div>
 
-    <!-- ================= CUSTOMER VIEW ================= -->
+    <!-- ================= CUSTOMER 3D WORLD VIEW ================= -->
     <div id="customerView" class="view-section" style="display: flex;">
-        <div id="map"></div>
-
-        <!-- 3D Street View Inspector Modal -->
-        <div id="streetViewModal">
-            <div style="background:#222; color:white; padding:8px; font-size:11px; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
-                <span id="modalTitle">🕶️ 3D Street View Inspector</span>
-                <span style="font-size:9px; color:#28a745;">Live Walking View</span>
+        
+        <!-- Floating Interactive Game Card -->
+        <div class="floating-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-weight:bold; font-size:12px; color:#38bdf8;" id="cardTitle">📍 Neighborhood Sector: Accra Central</span>
+                <span style="font-size:9px; background:#10b981; color:white; padding:2px 6px; border-radius:10px;">🟢 Live 3D Stream</span>
             </div>
-            <iframe id="streetViewFrame" style="flex:1; width:100%; border:none;" src=""></iframe>
-            <button class="close-3d-btn" onclick="close3DView()">✕ Close 3D View & Return to Radar</button>
+            <div style="font-size:10px; color:#94a3b8;" id="cardDesc">Tap any vendor below to inspect or trigger gate alert.</div>
         </div>
+
+        <div id="canvas3D-container"></div>
 
         <div class="control-box">
             <div id="neighborhoodBulletin" class="dispatch-bulletin">
-                📰 <b>Neighborhood Dispatch:</b> Scanning schedules...
+                📰 <b>Neighborhood Dispatch:</b> Scanning live street schedules...
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span>📍 <b id="myLocationText">Accra Center</b></span>
-                <span class="status-pill">🟢 Uber-Live Radar</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top:2px;">
+                <span>🏠 House Gate: <b style="color:#38bdf8;">Perimeter Active (500m)</b></span>
+                <span class="status-pill">Active Fleet</span>
             </div>
 
             <!-- Vendor Radar Feed Box -->
             <div id="vendorFeedBox" class="radar-feed-box">
-                <div style="color: #666; text-align: center; padding: 2px; font-size: 9px;">Scanning cloud radar...</div>
+                <div style="color: #94a3b8; text-align: center; padding: 4px; font-size: 10px;">Loading 3D world entities...</div>
             </div>
 
-            <div class="wishlist-section">
-                <div style="font-weight: bold; margin-bottom: 1px;">🔮 Future Craving / Need Alert:</div>
-                <div style="display: flex; gap: 3px;">
-                    <select id="wishItem" style="font-size:9px; padding:2px; flex:1;">
+            <div class="wishlist-section" style="margin-top:6px;">
+                <div style="font-weight: bold; margin-bottom: 2px; color:#fcd34d;">🔮 Future Craving / Need Alert:</div>
+                <div style="display: flex; gap: 4px;">
+                    <select id="wishItem" style="font-size:10px; padding:4px; flex:1;">
                         <optgroup label="🍔 Consumables">
                             <option value="beans">🫘 Hot Beans & Plantain</option>
                             <option value="bread">🍞 Fresh Bread</option>
                             <option value="chips">🍟 Plantain Chips</option>
-                            <option value="water">🧊 Ice Water</option>
                         </optgroup>
                         <optgroup label="🛍️ Non-Consumables">
                             <option value="charger">🔌 Phone Charger & Cables</option>
                             <option value="slippers">🩴 Slippers / Sandals</option>
-                            <option value="tissue">🧻 Toilet Tissue / Wipes</option>
                         </optgroup>
                     </select>
-                    <input type="time" id="wishTime" value="14:00" style="font-size:9px; padding:2px; width:50px;">
-                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 5px; font-size:9px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">Set</button>
+                    <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:4px; width:60px;">
+                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:4px 8px; font-size:10px; background:#3b82f6; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Set</button>
                 </div>
             </div>
 
-            <button style="padding:4px; background:#007bff; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; width:100%; margin-top:2px; font-weight:bold;" onclick="setMyCurrentLocation()">Set House to Current GPS</button>
+            <button style="padding:6px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:11px; width:100%; margin-top:6px; font-weight:bold;" onclick="setMyCurrentLocation()">Recalibrate House GPS</button>
         </div>
     </div>
 
@@ -316,47 +298,47 @@
         <div class="vendor-container">
             
             <div class="card-box">
-                <div style="font-size: 13px; font-weight: bold; color: #2b8a3e; margin-bottom: 6px;">🎯 Step 1: Pick What You Are Selling</div>
+                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 8px;">🎯 Step 1: Pick What You Are Selling</div>
                 
                 <div class="cat-toggle">
                     <div id="catConsumable" class="cat-tab active" onclick="switchCategory('consumable')">🍔 Consumables</div>
                     <div id="catGoods" class="cat-tab" onclick="switchCategory('goods')">🛍️ Non-Consumables</div>
                 </div>
 
-                <div id="gridConsumable" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-                    <button type="button" id="btn_bread" class="prod-select-btn" onclick="selectProduct('bread')" style="border: 2px solid #28a745; background: #e9f7ef; color: #155724;">🍞 Bread</button>
-                    <button type="button" id="btn_beans" class="prod-select-btn" onclick="selectProduct('beans')" style="border: 1px solid #ced4da; background: white; color: #333;">🫘 Beans</button>
-                    <button type="button" id="btn_chips" class="prod-select-btn" onclick="selectProduct('chips')" style="border: 1px solid #ced4da; background: white; color: #333;">🍟 Chips</button>
-                    <button type="button" id="btn_water" class="prod-select-btn" onclick="selectProduct('water')" style="border: 1px solid #ced4da; background: white; color: #333;">🧊 Water</button>
+                <div id="gridConsumable" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                    <button type="button" id="btn_bread" class="prod-select-btn" onclick="selectProduct('bread')" style="border: 2px solid #10b981; background: rgba(16,185,129,0.1); color: #34d399;">🍞 Bread</button>
+                    <button type="button" id="btn_beans" class="prod-select-btn" onclick="selectProduct('beans')">🫘 Beans</button>
+                    <button type="button" id="btn_chips" class="prod-select-btn" onclick="selectProduct('chips')">🍟 Chips</button>
+                    <button type="button" id="btn_water" class="prod-select-btn" onclick="selectProduct('water')">🧊 Water</button>
                 </div>
 
-                <div id="gridGoods" style="display: none; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-                    <button type="button" id="btn_charger" class="prod-select-btn" onclick="selectProduct('charger')" style="border: 1px solid #ced4da; background: white; color: #333;">🔌 Charger</button>
-                    <button type="button" id="btn_slippers" class="prod-select-btn" onclick="selectProduct('slippers')" style="border: 1px solid #ced4da; background: white; color: #333;">🩴 Slippers</button>
-                    <button type="button" id="btn_tissue" class="prod-select-btn" onclick="selectProduct('tissue')" style="border: 1px solid #ced4da; background: white; color: #333;">🧻 Tissue</button>
+                <div id="gridGoods" style="display: none; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                    <button type="button" id="btn_charger" class="prod-select-btn" onclick="selectProduct('charger')">🔌 Charger</button>
+                    <button type="button" id="btn_slippers" class="prod-select-btn" onclick="selectProduct('slippers')">🩴 Slippers</button>
+                    <button type="button" id="btn_tissue" class="prod-select-btn" onclick="selectProduct('tissue')">🧻 Tissue</button>
                 </div>
 
                 <input type="hidden" id="selectedProductCode" value="bread">
             </div>
 
             <div class="card-box">
-                <div style="font-size: 13px; font-weight: bold; color: #2b8a3e; margin-bottom: 6px;">⏰ Step 2: Choose Timing</div>
+                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 8px;">⏰ Step 2: Choose Timing</div>
                 <div class="timing-toggle">
                     <div id="modeNow" class="time-tab active" onclick="setTimingMode('now')">⚡ Begin Now (Live)</div>
                     <div id="modeSchedule" class="time-tab" onclick="setTimingMode('schedule')">📅 Schedule Later</div>
                 </div>
-                <div id="scheduleTimeContainer" style="display: none; margin-top: 8px;">
+                <div id="scheduleTimeContainer" style="display: none; margin-top: 10px;">
                     <label>Departure Time:</label>
                     <input type="time" id="departureTime" value="14:00">
                 </div>
             </div>
 
-            <div class="card-box" style="text-align: center; padding: 12px;">
-                <div style="font-size: 11px; color: #666; margin-bottom: 8px;">📍 <em>Route is tracked automatically as you walk. No typing required!</em></div>
+            <div class="card-box" style="text-align: center; padding: 15px;">
+                <div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">📍 <em>Route is tracked automatically as you walk. No typing required!</em></div>
                 <button id="broadcastBtn" class="big-btn" onclick="toggleBroadcast()">🚀 START WALKING / GO LIVE</button>
                 
-                <div id="vendorStatusBox" style="margin-top: 8px; padding: 8px; background: #e9f7ef; border-radius: 5px; font-size: 11px; color: #155724; display: none; font-weight: bold;">
-                    🟢 YOU ARE LIVE! Broadcasting your position.
+                <div id="vendorStatusBox" style="margin-top: 10px; padding: 10px; background: rgba(16,185,129,0.15); border-radius: 6px; font-size: 12px; color: #34d399; display: none; font-weight: bold; border: 1px solid #10b981;">
+                    🟢 YOU ARE LIVE! Broadcasting your 3D spatial position.
                 </div>
             </div>
 
@@ -373,45 +355,72 @@
             console.log("Supabase initialization warning");
         }
 
-        let map;
-        let customerMarker;
-        let perimeterCircle;
-        let activeMapMarkers = {};
-        let vendorPathTrails = {};
+        // ================= THREE.JS 3D WORLD ENGINE =================
+        let scene, camera, renderer;
+        let vendorMeshes = {};
+        let customerHouseMesh;
 
-        function initMap() {
-            const accraCenter = [5.6037, -0.1870];
-            map = L.map('map', { zoomControl: false }).setView(accraCenter, 15);
+        function init3DWorld() {
+            const container = document.getElementById('canvas3D-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(map);
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 18, 14);
+            camera.lookAt(0, 0, 0);
 
-            customerMarker = L.marker(accraCenter).addTo(map)
-                .bindPopup("<b>My House</b>");
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
 
-            perimeterCircle = L.circle(accraCenter, {
-                color: '#28a745',
-                fillColor: '#28a745',
-                fillOpacity: 0.15,
-                radius: 500
-            }).addTo(map);
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(10, 20, 10);
+            scene.add(directionalLight);
+
+            // Ground Plane (Street grid)
+            const groundGeo = new THREE.PlaneGeometry(30, 30);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+
+            // Customer House / Gate Base (Center)
+            const houseGeo = new THREE.BoxGeometry(2, 1.5, 2);
+            const houseMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+            customerHouseMesh = new THREE.Mesh(houseGeo, houseMat);
+            customerHouseMesh.position.set(0, 0.75, 0);
+            scene.add(customerHouseMesh);
+
+            // 500m Perimeter Ring Indicator
+            const ringGeo = new THREE.RingGeometry(5, 5.2, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.4 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.02;
+            scene.add(ring);
+
+            animate3D();
         }
 
-        window.onload = initMap;
-
-        function open3DStreetView(lat, lon, vendorName, emoji) {
-            document.getElementById('modalTitle').innerHTML = `🕶️ 3D View: ${emoji} ${vendorName} walking toward you`;
-            const embedUrl = `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lon}&cbp=12,0,0,0,5&output=embed`;
-            document.getElementById('streetViewFrame').src = embedUrl;
-            document.getElementById('streetViewModal').style.display = 'flex';
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            renderer.render(scene, camera);
         }
 
-        function close3DView() {
-            document.getElementById('streetViewModal').style.display = 'none';
-            document.getElementById('streetViewFrame').src = '';
-        }
+        window.onload = init3DWorld;
+
+        // Resize handler
+        window.onresize = () => {
+            const container = document.getElementById('canvas3D-container');
+            if (container && renderer && camera) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        };
 
         function switchMode(mode) {
             if (mode === 'customer') {
@@ -419,7 +428,6 @@
                 document.getElementById('vendorView').style.display = 'none';
                 document.getElementById('customerTabBtn').className = 'mode-btn active';
                 document.getElementById('vendorTabBtn').className = 'mode-btn';
-                if (map) map.invalidateSize();
             } else {
                 document.getElementById('customerView').style.display = 'none';
                 document.getElementById('vendorView').style.display = 'flex';
@@ -451,13 +459,13 @@
                 const btn = document.getElementById('btn_' + p);
                 if (btn) {
                     if (p === code) {
-                        btn.style.border = '2px solid #28a745';
-                        btn.style.background = '#e9f7ef';
-                        btn.style.color = '#155724';
+                        btn.style.border = '2px solid #10b981';
+                        btn.style.background = 'rgba(16,185,129,0.1)';
+                        btn.style.color = '#34d399';
                     } else {
-                        btn.style.border = '1px solid #ced4da';
-                        btn.style.background = 'white';
-                        btn.style.color = '#333';
+                        btn.style.border = '1px solid #475569';
+                        btn.style.background = '#1e293b';
+                        btn.style.color = '#cbd5e1';
                     }
                 }
             });
@@ -515,13 +523,7 @@
                 navigator.geolocation.getCurrentPosition(position => {
                     customerLat = position.coords.latitude;
                     customerLon = position.coords.longitude;
-                    const newLatLng = [customerLat, customerLon];
-                    
-                    if (customerMarker) customerMarker.setLatLng(newLatLng);
-                    if (perimeterCircle) perimeterCircle.setLatLng(newLatLng);
-                    if (map) map.setView(newLatLng, 15);
-
-                    document.getElementById("myLocationText").innerHTML = `GPS Locked`;
+                    document.getElementById("cardTitle").innerHTML = `📍 GPS Locked & Calibrated`;
                 }, err => alert("GPS Error: " + err.message), { enableHighAccuracy: true });
             }
         }
@@ -549,27 +551,6 @@
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
 
-        // Uber-style smooth linear marker animation (interpolation)
-        function animateMarkerMovement(marker, targetLatLng, duration = 2000) {
-            const startLatLng = marker.getLatLng();
-            const startTime = performance.now();
-
-            function frame(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                const currentLat = startLatLng.lat + (targetLatLng[0] - startLatLng.lat) * progress;
-                const currentLng = startLatLng.lng + (targetLatLng[1] - startLatLng.lng) * progress;
-
-                marker.setLatLng([currentLat, currentLng]);
-
-                if (progress < 1) {
-                    requestAnimationFrame(frame);
-                }
-            }
-            requestAnimationFrame(frame);
-        }
-
         async function scanCloudRadar() {
             let activeHawkers = [];
 
@@ -590,40 +571,32 @@
             let bulletinText = "";
             let currentActiveIds = [];
 
-            activeHawkers.forEach(data => {
+            activeHawkers.forEach((data, index) => {
                 currentActiveIds.push(data.id);
                 const distance = Math.round(getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon));
                 const isAtGate = distance <= ALERT_RADIUS_METERS;
                 const emoji = getProductEmoji(data.product_code);
-                const vendorLatLng = [data.lat, data.lon];
 
-                if (!activeMapMarkers[data.id]) {
-                    const customIcon = L.divIcon({
-                        className: 'custom-vendor-pin',
-                        html: `<div style="background:white; border:2px solid #28a745; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${emoji}</div>`,
-                        iconSize: [28, 28]
-                    });
-
-                    activeMapMarkers[data.id] = L.marker(vendorLatLng, { icon: customIcon }).addTo(map)
-                        .on('click', () => open3DStreetView(data.lat, data.lon, data.id, emoji));
+                // --- 3D ISOMETRIC VENDOR ENTITY RENDERING ---
+                if (!vendorMeshes[data.id] && scene) {
+                    const group = new THREE.Group();
                     
-                    vendorPathTrails[data.id] = [vendorLatLng];
-                } else {
-                    // Smoothly animate marker gliding towards the new GPS position
-                    animateMarkerMovement(activeMapMarkers[data.id], vendorLatLng, 2500);
-                    
-                    vendorPathTrails[data.id].push(vendorLatLng);
-                    if (vendorPathTrails[data.id].length > 25) vendorPathTrails[data.id].shift();
+                    // Vendor Box Avatar
+                    const bodyGeo = new THREE.BoxGeometry(0.8, 1, 0.8);
+                    const bodyMat = new THREE.MeshStandardMaterial({ color: isAtGate ? 0xef4444 : 0x10b981 });
+                    const body = new THREE.Mesh(bodyGeo, bodyMat);
+                    body.position.y = 0.5;
+                    group.add(body);
 
-                    if (!activeMapMarkers[data.id].polyLine) {
-                        activeMapMarkers[data.id].polyLine = L.polyline(vendorPathTrails[data.id], {
-                            color: '#007bff',
-                            weight: 3,
-                            opacity: 0.7
-                        }).addTo(map);
-                    } else {
-                        activeMapMarkers[data.id].polyLine.setLatLngs(vendorPathTrails[data.id]);
-                    }
+                    scene.add(group);
+                    vendorMeshes[data.id] = group;
+                }
+
+                if (vendorMeshes[data.id]) {
+                    // Map GPS offsets into 3D world space coordinates
+                    const offsetX = (data.lon - customerLon) * 2000;
+                    const offsetZ = (data.lat - customerLat) * -2000;
+                    vendorMeshes[data.id].position.set(offsetX, 0, offsetZ);
                 }
 
                 if (previousDistances[data.id] !== undefined) {
@@ -639,9 +612,9 @@
                     let itemClass = isAtGate ? "vendor-radar-item at-gate" : "vendor-radar-item";
 
                     htmlContent += `
-                        <div class="${itemClass}" onclick="open3DStreetView(${data.lat}, ${data.lon}, '${data.id}', '${emoji}')">
-                            <div><b>${emoji} ${data.id}</b> <span style="font-size:8px; color:#666;">(${distance}m)</span> - 🕶️ Tap for 3D</div>
-                            <div style="font-weight:bold; color:${isAtGate ? '#dc3545' : '#28a745'};">${statusMsg}</div>
+                        <div class="${itemClass}">
+                            <div><b>${emoji} ${data.id}</b> <span style="font-size:9px; color:#94a3b8;">(${distance}m)</span></div>
+                            <div style="font-weight:bold; color:${isAtGate ? '#ef4444' : '#34d399'};">${statusMsg}</div>
                         </div>
                     `;
                 }
@@ -650,15 +623,15 @@
                 bulletinText += `📢 <b>${data.id}</b> (${emoji}) scheduled around <b>${formattedTime}</b>. `;
             });
 
-            Object.keys(activeMapMarkers).forEach(id => {
-                if (!currentActiveIds.includes(id)) {
-                    map.removeLayer(activeMapMarkers[id]);
-                    if (activeMapMarkers[id].polyLine) map.removeLayer(activeMapMarkers[id].polyLine);
-                    delete activeMapMarkers[id];
+            // Clean up offline vendor 3D meshes
+            Object.keys(vendorMeshes).forEach(id => {
+                if (!currentActiveIds.includes(id) && scene) {
+                    scene.remove(vendorMeshes[id]);
+                    delete vendorMeshes[id];
                 }
             });
 
-            feedBox.innerHTML = htmlContent || '<div style="color: #666; text-align: center; padding: 2px; font-size: 9px;">No vendors currently in perimeter.</div>';
+            feedBox.innerHTML = htmlContent || '<div style="color: #94a3b8; text-align: center; padding: 4px; font-size: 10px;">No vendors currently in perimeter.</div>';
             bulletinBox.innerHTML = bulletinText || "📰 <b>Neighborhood Dispatch:</b> No upcoming schedules for today yet.";
         }
 
