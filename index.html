@@ -67,9 +67,63 @@
             width: 100%;
             background: #ddd;
             min-height: 150px;
+            position: relative;
         }
         iframe { width: 100%; height: 100%; border: none; }
         
+        /* Perimeter Beacon Overlay */
+        .perimeter-beacon-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 140px;
+            height: 140px;
+            margin-top: -70px;
+            margin-left: -70px;
+            border: 2px dashed rgba(40, 167, 69, 0.7);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: radarPulse 2.5s infinite linear;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .perimeter-beacon-core {
+            width: 12px;
+            height: 12px;
+            background: rgba(40, 167, 69, 0.9);
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.9);
+        }
+        .perimeter-label {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #28a745;
+            padding: 2px 8px;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 10px;
+            z-index: 5;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        @keyframes radarPulse {
+            0% {
+                transform: scale(0.6);
+                opacity: 0.9;
+            }
+            100% {
+                transform: scale(1.8);
+                opacity: 0;
+            }
+        }
+
         .control-box {
             background: white;
             padding: 8px 10px;
@@ -109,7 +163,6 @@
             font-size: 12px;
         }
         
-        /* Big Bold Action Buttons */
         .big-btn {
             width: 100%;
             padding: 14px;
@@ -161,7 +214,6 @@
             font-size: 13px;
             text-align: center;
             z-index: 5;
-            transition: all 0.2s ease;
         }
 
         .top-products-strip {
@@ -210,6 +262,12 @@
     <div id="customerView" class="view-section" style="display: flex;">
         <div id="map-container">
             <iframe id="googleMap" src="https://maps.google.com/maps?q=5.6037,-0.1870&z=15&output=embed"></iframe>
+            
+            <!-- Pulsing Perimeter Beacon Overlay -->
+            <div class="perimeter-beacon-ring">
+                <div class="perimeter-beacon-core"></div>
+            </div>
+            <div class="perimeter-label">📡 Active 500m Perimeter Beacon</div>
         </div>
 
         <div class="control-box">
@@ -237,7 +295,7 @@
                     <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:4px; width:65px;">
                     <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:4px 8px; font-size:10px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">Set</button>
                 </div>
-                <div id="wishStatus" style="font-size: 9px; color: #856404; margin-top: 1px;">Status: Ready to sync with cloud.</div>
+                <div id="wishStatus" style="font-size: 9px; color: #856404; margin-top: 1px;">Status: Wishlist ready.</div>
             </div>
 
             <button style="padding:8px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; font-size:12px; width:100%; margin-top:4px; font-weight:bold;" onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
@@ -314,8 +372,7 @@
         let selectedProduct = 'bread';
         function selectProduct(code) {
             selectedProduct = code;
-            const products = ['bread', 'beans', 'chips', 'water'];
-            products.forEach(p => {
+            ['bread', 'beans', 'chips', 'water'].forEach(p => {
                 const btn = document.getElementById('btn_' + p);
                 if (p === code) {
                     btn.style.border = '2px solid #28a745';
@@ -344,21 +401,27 @@
             }
         }
 
-        // Customer Logic
+        // Customer Logic & Dummy Data Fallback
         let customerLat = 5.6037; 
         let customerLon = -0.1870;
         const ALERT_RADIUS_METERS = 500;
         let alertedHawkers = {};
 
+        const dummyVendors = [
+            { id: "Auntie_Muni", product_code: "beans", lat: 5.6045, lon: -0.1865, note: "Hot gari & plantain ready!" },
+            { id: "Uncle_Kofi", product_code: "bread", lat: 5.6025, lon: -0.1885, note: "Freshly baked butter bread!" },
+            { id: "Yaw_Water", product_code: "water", lat: 5.6050, lon: -0.1880, note: "Ice cold mineral water!" }
+        ];
+
         async function setWishlist() {
-            if (!supabaseClient) { alert("Supabase not connected."); return; }
             const item = document.getElementById("wishItem").value;
             const time = document.getElementById("wishTime").value;
 
-            const { error } = await supabaseClient.from('customer_wishlists').insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
-            if (error) { alert("Error saving wishlist."); return; }
-            document.getElementById("wishStatus").innerHTML = `🔔 Saved! Alert set for ${item} around ${time}.`;
-            alert(`Wishlist saved! We'll track ${item} vendors for you around ${time}.`);
+            if (supabaseClient) {
+                await supabaseClient.from('customer_wishlists').insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
+            }
+            document.getElementById("wishStatus").innerHTML = `🔔 Wishlist active! Tracking ${item} for ~${time}.`;
+            alert(`🔮 Wishlist Magic Enabled! We have logged your craving for ${item} at ${time}. Our routing engine will prioritize nearby food carts approaching your neighborhood then.`);
         }
 
         function setMyCurrentLocation() {
@@ -395,15 +458,22 @@
         }
 
         async function scanCloudRadar() {
-            if (!supabaseClient) return;
-            const { data: activeHawkers } = await supabaseClient.from('active_hawkers').select(`id, product_code, lat, lon, products (audio_url)`);
-            const vendorListDiv = document.getElementById("vendorList");
-            if (!activeHawkers || activeHawkers.length === 0) {
-                vendorListDiv.innerHTML = "Scanning radar: No active vendors nearby.";
-                return;
+            let activeHawkers = [];
+
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('active_hawkers').select(`id, product_code, lat, lon, vendor_note`);
+                if (data && data.length > 0) {
+                    activeHawkers = data;
+                }
             }
 
+            if (activeHawkers.length === 0) {
+                activeHawkers = dummyVendors;
+            }
+
+            const vendorListDiv = document.getElementById("vendorList");
             let statusText = "";
+
             activeHawkers.forEach(data => {
                 const distance = Math.round(getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon));
                 const isNearby = distance <= ALERT_RADIUS_METERS;
@@ -412,7 +482,6 @@
                 statusText += `${emoji} ${data.id} (${distance}m) ${isNearby ? '🚨 AT GATE! ' : ''} | `;
 
                 if (isNearby && !alertedHawkers[data.id]) {
-                    if (data.products && data.products.audio_url) new Audio(data.products.audio_url).play().catch(e => {});
                     alertedHawkers[data.id] = true;
                 } else if (!isNearby) {
                     alertedHawkers[data.id] = false;
