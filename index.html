@@ -18,13 +18,13 @@
             overflow: hidden;
         }
         .app-header {
-            padding: 8px 10px;
+            padding: 6px 10px;
             text-align: center;
             background: #fff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             z-index: 10;
         }
-        h2 { color: #333; margin: 0; font-size: 16px; }
+        h2 { color: #333; margin: 0; font-size: 15px; }
         .subtitle { color: #666; font-size: 10px; margin: 0; }
         
         /* Mode Switcher */
@@ -32,12 +32,12 @@
             display: flex;
             background: #e9ecef;
             padding: 3px;
-            margin: 6px 10px 0 10px;
+            margin: 4px 10px 0 10px;
             border-radius: 8px;
         }
         .mode-btn {
             flex: 1;
-            padding: 6px;
+            padding: 5px;
             text-align: center;
             font-size: 11px;
             font-weight: bold;
@@ -59,14 +59,14 @@
             display: flex;
             flex-direction: column;
             width: 100%;
-            height: calc(100% - 70px);
+            height: calc(100% - 65px);
             position: relative;
         }
         #map-container {
             flex: 1;
             width: 100%;
             background: #ddd;
-            min-height: 150px;
+            min-height: 110px;
             position: relative;
         }
         iframe { width: 100%; height: 100%; border: none; }
@@ -76,65 +76,98 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 140px;
-            height: 140px;
-            margin-top: -70px;
-            margin-left: -70px;
-            border: 2px dashed rgba(40, 167, 69, 0.7);
+            width: 110px;
+            height: 110px;
+            margin-top: -55px;
+            margin-left: -55px;
+            border: 2px dashed rgba(40, 167, 69, 0.75);
             border-radius: 50%;
             pointer-events: none;
             animation: radarPulse 2.5s infinite linear;
             z-index: 4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         .perimeter-beacon-core {
-            width: 12px;
-            height: 12px;
-            background: rgba(40, 167, 69, 0.9);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            margin-top: -4px;
+            margin-left: -4px;
+            background: #28a745;
             border: 2px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 8px rgba(40, 167, 69, 0.9);
+            box-shadow: 0 0 6px #28a745;
         }
         .perimeter-label {
             position: absolute;
-            bottom: 8px;
+            bottom: 4px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.75);
+            background: rgba(0, 0, 0, 0.8);
             color: #28a745;
-            padding: 2px 8px;
-            font-size: 9px;
+            padding: 2px 6px;
+            font-size: 8px;
             font-weight: bold;
             border-radius: 10px;
             z-index: 5;
-            pointer-events: none;
             white-space: nowrap;
         }
 
         @keyframes radarPulse {
-            0% {
-                transform: scale(0.6);
-                opacity: 0.9;
-            }
-            100% {
-                transform: scale(1.8);
-                opacity: 0;
-            }
+            0% { transform: scale(0.6); opacity: 0.9; }
+            100% { transform: scale(1.7); opacity: 0; }
         }
 
         .control-box {
             background: white;
-            padding: 8px 10px;
+            padding: 6px 10px;
             box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
             text-align: left;
             font-size: 11px;
             width: 100%;
             z-index: 5;
         }
+
+        /* Proactive Neighborhood Dispatch Bulletin Banner */
+        .dispatch-bulletin {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #1976d2;
+            padding: 5px 8px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            font-size: 10px;
+            color: #0d47a1;
+        }
+
+        /* Vendor Radar Feed Box */
+        .radar-feed-box {
+            margin-top: 3px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            max-height: 70px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .vendor-radar-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 4px 6px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+            font-size: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .vendor-radar-item.at-gate {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
         
-        /* Engaging Vendor UI */
+        /* Vendor View Styles */
         .vendor-container {
             flex: 1;
             padding: 12px;
@@ -162,7 +195,6 @@
             border-radius: 6px;
             font-size: 12px;
         }
-        
         .big-btn {
             width: 100%;
             padding: 14px;
@@ -175,19 +207,12 @@
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(40,167,69,0.3);
             text-align: center;
-            z-index: 5;
-            position: relative;
         }
         .big-btn.stop {
             background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
             box-shadow: 0 4px 10px rgba(220,53,69,0.3);
         }
-
-        .timing-toggle {
-            display: flex;
-            gap: 6px;
-            margin-top: 5px;
-        }
+        .timing-toggle { display: flex; gap: 6px; margin-top: 5px; }
         .time-tab {
             flex: 1;
             padding: 8px;
@@ -198,30 +223,10 @@
             font-size: 11px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 5;
         }
-        .time-tab.active {
-            background: #28a745;
-            color: white;
-            border-color: #28a745;
-        }
-
-        .prod-select-btn {
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 13px;
-            text-align: center;
-            z-index: 5;
-        }
-
-        .top-products-strip {
-            display: flex;
-            gap: 4px;
-            margin-top: 3px;
-            overflow-x: auto;
-        }
+        .time-tab.active { background: #28a745; color: white; border-color: #28a745; }
+        .prod-select-btn { padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; text-align: center; }
+        .top-products-strip { display: flex; gap: 4px; margin-top: 3px; overflow-x: auto; }
         .product-badge {
             background: #e9f7ef;
             border: 1px solid #28a745;
@@ -233,7 +238,7 @@
             white-space: nowrap;
         }
         .wishlist-section {
-            margin-top: 4px;
+            margin-top: 3px;
             background: #fff3cd;
             border-left: 3px solid #ffc107;
             padding: 4px 6px;
@@ -263,46 +268,42 @@
         <div id="map-container">
             <iframe id="googleMap" src="https://maps.google.com/maps?q=5.6037,-0.1870&z=15&output=embed"></iframe>
             
-            <!-- Pulsing Perimeter Beacon Overlay -->
             <div class="perimeter-beacon-ring">
                 <div class="perimeter-beacon-core"></div>
             </div>
-            <div class="perimeter-label">📡 Active 500m Perimeter Beacon</div>
+            <div class="perimeter-label">📡 500m Perimeter Beacon Active</div>
         </div>
 
         <div class="control-box">
+            <!-- Proactive Neighborhood Dispatch Bulletin -->
+            <div id="neighborhoodBulletin" class="dispatch-bulletin">
+                📰 <b>Neighborhood Dispatch:</b> Scanning schedule forecasts for your street...
+            </div>
+
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span>📍 <b id="myLocationText">Accra Center</b></span>
-                <span class="status-pill">🟢 Live</span>
+                <span class="status-pill">🟢 Live Radar</span>
             </div>
-            
-            <div style="margin-top: 2px;">
-                <div class="top-products-strip">
-                    <span class="product-badge">🍞 Bread (Top)</span>
-                    <span class="product-badge">🫘 Beans (Trending)</span>
-                    <span class="product-badge">🧊 Ice Water</span>
-                </div>
+
+            <!-- Highly Visible Vendor Radar Feed Box -->
+            <div id="vendorFeedBox" class="radar-feed-box">
+                <div style="color: #666; text-align: center; padding: 4px; font-size: 10px;">Scanning cloud radar for nearby vendors...</div>
             </div>
 
             <div class="wishlist-section">
                 <div style="font-weight: bold; margin-bottom: 2px;">🔮 Future Craving Alert:</div>
                 <div style="display: flex; gap: 4px;">
-                    <select id="wishItem" style="font-size:10px; padding:4px; flex:1;">
+                    <select id="wishItem" style="font-size:10px; padding:2px; flex:1;">
                         <option value="beans">🫘 Hot Beans & Plantain</option>
                         <option value="bread">🍞 Fresh Bread</option>
                         <option value="chips">🍟 Plantain Chips</option>
                     </select>
-                    <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:4px; width:65px;">
-                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:4px 8px; font-size:10px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">Set</button>
+                    <input type="time" id="wishTime" value="14:00" style="font-size:10px; padding:2px; width:55px;">
+                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 6px; font-size:10px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">Set</button>
                 </div>
-                <div id="wishStatus" style="font-size: 9px; color: #856404; margin-top: 1px;">Status: Wishlist ready.</div>
             </div>
 
-            <button style="padding:8px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; font-size:12px; width:100%; margin-top:4px; font-weight:bold;" onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
-            
-            <div id="vendorList" style="font-size: 10px; color: #555; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                Scanning cloud radar...
-            </div>
+            <button style="padding:4px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; font-size:10px; width:100%; margin-top:3px; font-weight:bold;" onclick="setMyCurrentLocation()">Set House to Current GPS</button>
         </div>
     </div>
 
@@ -401,16 +402,15 @@
             }
         }
 
-        // Customer Logic & Dummy Data Fallback
         let customerLat = 5.6037; 
         let customerLon = -0.1870;
         const ALERT_RADIUS_METERS = 500;
-        let alertedHawkers = {};
+        let previousDistances = {};
 
         const dummyVendors = [
-            { id: "Auntie_Muni", product_code: "beans", lat: 5.6045, lon: -0.1865, note: "Hot gari & plantain ready!" },
-            { id: "Uncle_Kofi", product_code: "bread", lat: 5.6025, lon: -0.1885, note: "Freshly baked butter bread!" },
-            { id: "Yaw_Water", product_code: "water", lat: 5.6050, lon: -0.1880, note: "Ice cold mineral water!" }
+            { id: "Auntie_Muni", product_code: "beans", lat: 5.6042, lon: -0.1865, departure_time: "13:30:00" },
+            { id: "Uncle_Kofi", product_code: "bread", lat: 5.6028, lon: -0.1882, departure_time: "14:00:00" },
+            { id: "Yaw_Water", product_code: "water", lat: 5.6055, lon: -0.1875, departure_time: "14:15:00" }
         ];
 
         async function setWishlist() {
@@ -420,8 +420,7 @@
             if (supabaseClient) {
                 await supabaseClient.from('customer_wishlists').insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
             }
-            document.getElementById("wishStatus").innerHTML = `🔔 Wishlist active! Tracking ${item} for ~${time}.`;
-            alert(`🔮 Wishlist Magic Enabled! We have logged your craving for ${item} at ${time}. Our routing engine will prioritize nearby food carts approaching your neighborhood then.`);
+            alert(`🔮 Wishlist Magic Enabled! Tracking ${item} around ${time}.`);
         }
 
         function setMyCurrentLocation() {
@@ -432,8 +431,6 @@
                     document.getElementById("googleMap").src = `https://maps.google.com/maps?q=${customerLat},${customerLon}&z=15&output=embed`;
                     document.getElementById("myLocationText").innerHTML = `GPS Locked`;
                 }, err => alert("GPS Error: " + err.message), { enableHighAccuracy: true });
-            } else {
-                alert("Geolocation not supported.");
             }
         }
 
@@ -461,7 +458,7 @@
             let activeHawkers = [];
 
             if (supabaseClient) {
-                const { data } = await supabaseClient.from('active_hawkers').select(`id, product_code, lat, lon, vendor_note`);
+                const { data } = await supabaseClient.from('active_hawkers').select(`id, product_code, lat, lon, departure_time`);
                 if (data && data.length > 0) {
                     activeHawkers = data;
                 }
@@ -471,23 +468,41 @@
                 activeHawkers = dummyVendors;
             }
 
-            const vendorListDiv = document.getElementById("vendorList");
-            let statusText = "";
+            const feedBox = document.getElementById("vendorFeedBox");
+            const bulletinBox = document.getElementById("neighborhoodBulletin");
+            let htmlContent = "";
+            let bulletinText = "";
 
             activeHawkers.forEach(data => {
                 const distance = Math.round(getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon));
-                const isNearby = distance <= ALERT_RADIUS_METERS;
+                const isAtGate = distance <= ALERT_RADIUS_METERS;
                 const emoji = getProductEmoji(data.product_code);
+                
+                let statusMsg = isAtGate ? "🚨 AT YOUR GATE!" : `🚶 Approaching (${distance}m)`;
+                let itemClass = isAtGate ? "vendor-radar-item at-gate" : "vendor-radar-item";
 
-                statusText += `${emoji} ${data.id} (${distance}m) ${isNearby ? '🚨 AT GATE! ' : ''} | `;
-
-                if (isNearby && !alertedHawkers[data.id]) {
-                    alertedHawkers[data.id] = true;
-                } else if (!isNearby) {
-                    alertedHawkers[data.id] = false;
+                if (previousDistances[data.id] !== undefined) {
+                    const prevDist = previousDistances[data.id];
+                    if (prevDist <= ALERT_RADIUS_METERS && distance > ALERT_RADIUS_METERS) {
+                        alert(`🚨 ALERT: ${data.id} (${emoji}) has just passed your gate! Catch them now!`);
+                    }
                 }
+                previousDistances[data.id] = distance;
+
+                htmlContent += `
+                    <div class="${itemClass}">
+                        <div><b>${emoji} ${data.id}</b> <span style="font-size:9px; color:#666;">(${distance}m)</span></div>
+                        <div style="font-weight:bold; color:${isAtGate ? '#dc3545' : '#28a745'};">${statusMsg}</div>
+                    </div>
+                `;
+
+                // Build forecast news
+                const timeStr = data.departure_time ? data.departure_time.substring(0,5) : 'Soon';
+                bulletinText += `📢 <b>${data.id}</b> (${emoji}) is scheduled in your neighborhood around <b>${timeStr}</b>. `;
             });
-            vendorListDiv.innerHTML = statusText;
+
+            feedBox.innerHTML = htmlContent;
+            bulletinBox.innerHTML = bulletinText || "📰 <b>Neighborhood Dispatch:</b> No upcoming schedules for today yet.";
         }
 
         setInterval(scanCloudRadar, 3000);
@@ -506,7 +521,7 @@
             const btn = document.getElementById("broadcastBtn");
             const statusBox = document.getElementById("vendorStatusBox");
             const productCode = selectedProduct;
-            const departureTime = timingMode === 'now' ? 'Now' : document.getElementById("departureTime").value;
+            const departureTime = timingMode === 'now' ? '13:00:00' : document.getElementById("departureTime").value + ':00';
 
             if (!isLive) {
                 isLive = true;
@@ -545,7 +560,7 @@
                 id: id,
                 product_code: product_code,
                 route_lane: 'Auto-Tracked Lane',
-                departure_time: dep_time === 'Now' ? '00:00:00' : dep_time + ':00',
+                departure_time: dep_time,
                 vendor_note: 'Active on route',
                 lat: currentLat,
                 lon: currentLon,
