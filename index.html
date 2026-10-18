@@ -6,7 +6,7 @@
     <title>Store-to-Door Radar</title>
     
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <style>
         body {
@@ -19,12 +19,14 @@
         h2 { color: #333; margin: 5px 0; }
         .subtitle { color: #666; font-size: 13px; margin-bottom: 12px; }
         
+        /* Explicit height and background so it's never a blank white box */
         #map {
-            height: 65vh;
+            height: 55vh;
             width: 100%;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
             margin-bottom: 15px;
+            background: #e5e3df; 
         }
         
         .control-box {
@@ -38,15 +40,16 @@
             font-size: 14px;
         }
         button {
-            padding: 10px 15px;
+            padding: 12px 15px;
             background: #007bff;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 15px;
             width: 100%;
             margin-top: 8px;
+            font-weight: bold;
         }
         .status-pill {
             font-weight: bold;
@@ -62,20 +65,20 @@
     <h2>Store-to-Door Radar 📡</h2>
     <div class="subtitle">Live Street Vendor Fleet</div>
 
-    <!-- Interactive Map -->
+    <!-- Interactive Map Container -->
     <div id="map"></div>
 
     <!-- Simple Status & Location Box -->
     <div class="control-box">
-        <div>📍 <span id="myLocationText">Using default location (Accra Center)</span></div>
+        <div>📍 <span id="myLocationText">Default Location: Accra Center</span></div>
         <button onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
-        <div style="margin-top: 8px; font-size: 13px; color: #555;">
+        <div style="margin-top: 10px; font-size: 13px; color: #555;">
             Radar Status: <span class="status-pill">🟢 Scanning Live (500m Audio Alert)</span>
         </div>
     </div>
 
     <!-- Leaflet JS Library -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
         // REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
@@ -88,7 +91,7 @@
         let customerLon = -0.1870;
         const ALERT_RADIUS_METERS = 500;
 
-        // Initialize Map
+        // Initialize Map immediately
         const map = L.map('map').setView([customerLat, customerLon], 14);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -98,7 +101,7 @@
 
         // Customer Marker & Radius
         let customerMarker = L.marker([customerLat, customerLon]).addTo(map)
-            .bindPopup("<b>🏠 My House</b>").openPopup();
+            .bindPopup("<b>🏠 My House / Default Location</b>").openPopup();
 
         let radiusCircle = L.circle([customerLat, customerLon], {
             color: '#007bff',
@@ -120,17 +123,16 @@
                     customerMarker.setLatLng([customerLat, customerLon]);
                     radiusCircle.setLatLng([customerLat, customerLon]);
 
-                    document.getElementById("myLocationText").innerHTML = 
+                    document.getElementById("myLocationTextinnerHTML = 
                         `House GPS Set (${customerLat.toFixed(4)}, ${customerLon.toFixed(4)})`;
                 }, error => {
                     alert("Unable to retrieve location: " + error.message);
-                });
+                }, { enableHighAccuracy: true });
             } else {
                 alert("Geolocation is not supported by this browser.");
             }
         }
 
-        // Map product codes to clean item icons
         function getProductEmoji(code) {
             switch(code) {
                 case 'bread': return '🍞';
@@ -174,7 +176,6 @@
 
             let activeIds = activeHawkers.map(h => h.id);
 
-            // Remove offline vendor markers from map
             for (let id in hawkerMarkers) {
                 if (!activeIds.includes(id)) {
                     map.removeLayer(hawkerMarkers[id]);
@@ -203,7 +204,6 @@
                     </div>
                 `;
 
-                // Update or create map marker with product icon
                 if (hawkerMarkers[data.id]) {
                     hawkerMarkers[data.id].setLatLng([data.lat, data.lon]);
                     hawkerMarkers[data.id].getPopup().setContent(popupContent);
@@ -211,14 +211,13 @@
                     hawkerMarkers[data.id] = L.marker([data.lat, data.lon], {
                         icon: L.divIcon({
                             className: 'custom-vendor-icon',
-                            html: `<div style="font-size: 26px; background: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,0.3);">${emoji}</div>`,
+                            html: `<div style="font-size: 24px; background: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 6px rgba(0,0,0,0.3); border: 2px solid #007bff;">${emoji}</div>`,
                             iconSize: [36, 36],
                             iconAnchor: [18, 18]
                         })
                     }).addTo(map).bindPopup(popupContent);
                 }
 
-                // Trigger proximity audio alarm when vendor crosses within 500m
                 if (isNearby) {
                     if (!alertedHawkers[data.id]) {
                         if (audioUrl) {
@@ -232,7 +231,6 @@
             });
         }
 
-        // Poll every 3 seconds
         setInterval(scanCloudRadar, 3000);
         scanCloudRadar();
     </script>
