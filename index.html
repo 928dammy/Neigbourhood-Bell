@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neighborhood Radar Map - Customer</title>
+    
+    <!-- Leaflet CSS for the map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+            padding: 20px;
+            margin: 0;
+        }
+        h2 { color: #333; margin: 10px 0; }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #map {
+            height: 350px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .radar-box {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .hawker-card {
+            background: #e9f7ef;
+            border-left: 5px solid #28a745;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+        }
+        .alert-active {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 5px;
+        }
+    </style>
+
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Neighborhood Radar 📡</h2>
+        <p>Live Cloud Map & Comical Ad Feed</p>
+
+        <!-- Interactive Map Container -->
+        <div id="map"></div>
+
+        <div class="radar-box">
+            <h3>📍 My House Settings</h3>
+            <p id="myLocationText">Loading default location (Accra)...</p>
+            <button onclick="setMyCurrentLocation()">Set My House to Current GPS</button>
+        </div>
+
+        <div class="radar-box">
+            <h3>🚶‍♂️ Passing Hawkers Nearby</h3>
+            <div id="radarFeed">Connecting to cloud radar network...</div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS Library -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // REPLACE WITH YOUR ACTUAL SUPABASE CREDENTIALS
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Default customer location (Accra center)
+        let customerLat = 5.6037; 
+        let customerLon = -0.1870;
+        const ALERT_RADIUS_METERS = 500;
+
+        // Initialize Map
+        const map = L.map('map').setView([customerLat, customerLon], 15);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add Customer Marker & Radius Circle
+        let customerMarker = L.marker([customerLat, customerLon]).addTo(map)
+            .bindPopup("<b>My House</b>").openPopup();
+
+        let radiusCircle = L.circle([customerLat, customerLon], {
+            color: 'blue',
+            fillColor: '#3090C7',
+            fillOpacity: 0.15,
+            radius: ALERT_RADIUS_METERS
+        }).addTo(map);
+
+        let hawkerMarkers = {};
+        let alertedHawkers = {};
+
+        function setMyCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    customerLat = position.coords.latitude;
+                    customerLon = position.coords.longitude;
+                    
+                    map.setView([customerLat, customerLon], 16);
+                    customerMarker.setLatLng([customerLat, customerLon]);
+                    radiusCircle.setLatLng([customerLat, customerLon]);
+
+                    document.getElementById("myLocationText").innerHTML = 
+                        `Lat: ${customerLat.toFixed(5)}, Lon: ${customerLon.toFixed(5)}`;
+                }, error => {
+                    alert("Unable to retrieve location: " + error.message);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Haversine formula
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI / 180);
+        }
+
+        async function scanCloudRadar() {
+            // Fetch active hawkers joined with product metadata (comical calls & audio URLs) from Supabase
+            const { data: activeHawkers, error } = await supabaseClient
+                .from('active_hawkers')
+                .select(`
+                    id,
+                    route_lane,
+                    vendor_note,
+                    lat,
+                    lon,
+                    products (
+                        product_name,
+                        comical_call,
+                        audio_url
+                    )
+                `);
+
+            const feedDiv = document.getElementById("radarFeed");
+            if (error) {
+                feedDiv.innerHTML = "Error syncing with cloud radar.";
+                console.error(error);
+                return;
+            }
+
+            let htmlContent = "";
+            let foundAny = false;
+            let activeIds = activeHawkers.map(h => h.id);
+
+            // Clean up markers of vendors who went offline or timed out
+            for (let id in hawkerMarkers) {
+                if (!activeIds.includes(id)) {
+                    map.removeLayer(hawkerMarkers[id]);
+                    delete hawkerMarkers[id];
+                }
+            }
+
+            activeHawkers.forEach(data => {
+                foundAny = true;
+                const distance = getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon);
+                const roundedDist = Math.round(distance);
+                const isNearby = distance <= ALERT_RADIUS_METERS;
+
+                const prodName = data.products ? data.products.product_name : 'General Item';
+                const comicalCall = data.products ? data.products.comical_call : 'Coming straight to your gate!';
+                const audioUrl = data.products ? data.products.audio_url : null;
+
+                // Update or create Hawker Map Marker
+                if (hawkerMarkers[data.id]) {
+                    hawkerMarkers[data.id].setLatLng([data.lat, data.lon]);
+                    hawkerMarkers[data.id].bindPopup(`<b>${data.id}</b><br>Selling: ${prodName}`);
+                } else {
+                    hawkerMarkers[data.id] = L.marker([data.lat, data.lon], {
+                        icon: L.divIcon({
+                            className: 'custom-icon',
+                            html: '🛒',
+                            iconSize: [30, 30]
+                        })
+                    }).addTo(map).bindPopup(`<b>${data.id}</b><br>Selling: ${prodName}`);
+                }
+
+                if (isNearby) {
+                    if (!alertedHawkers[data.id]) {
+                        playDynamicAudio(audioUrl);
+                        alertedHawkers[data.id] = true;
+                    }
+                } else {
+                    alertedHawkers[data.id] = false;
+                }
+
+                htmlContent += `
+                    <div class="hawker-card ${isNearby ? 'alert-active' : ''}">
+                        <strong>👤 ${data.id}</strong> (${data.route_lane})<br>
+                        📢 <em>${comicalCall}</em><br>
+                        📝 Note: "${data.vendor_note}"<br>
+                        📏 Distance: <strong>${roundedDist} meters</strong><br>
+                        ${isNearby ? '🚨 <strong>Nearby! Run to your gate before he pass!</strong>' : '⏳ Approaching your hood...'}
+                    </div>
+                `;
+            });
+
+            if (!foundAny) {
+                feedDiv.innerHTML = "No hawkers currently online in your area.";
+            } else {
+                feedDiv.innerHTML = htmlContent;
+            }
+        }
+
+        function playDynamicAudio(url) {
+            if (url) {
+                const sound = new Audio(url);
+                sound.play().catch(err => {
+                    console.log("Audio play blocked by browser policy:", err);
+                });
+            }
+        }
+
+        // Poll Supabase cloud radar every 3 seconds
+        setInterval(scanCloudRadar, 3000);
+        scanCloudRadar();
+    </script>
+
+</body>
+</html>
