@@ -85,6 +85,30 @@
             z-index: 5;
         }
 
+        /* Neighborhood Corridor Search Bar */
+        .search-radar-bar {
+            display: flex;
+            gap: 3px;
+            margin-bottom: 4px;
+        }
+        .search-radar-bar input {
+            flex: 1;
+            font-size: 9px;
+            padding: 4px;
+            border: 1px solid #007bff;
+            border-radius: 3px;
+        }
+        .search-radar-bar button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
         .dispatch-bulletin {
             background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
             border-left: 3px solid #1976d2;
@@ -118,6 +142,10 @@
             border-left: 3px solid #28a745;
             font-size: 9px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+        .vendor-radar-item.highlighted {
+            border-left-color: #ffc107;
+            background: #fff9db;
         }
         .vendor-radar-item.at-gate {
             border-left-color: #dc3545;
@@ -230,39 +258,24 @@
         <div id="map"></div>
 
         <div class="control-box">
+            <!-- Neighborhood Corridor Search Bar -->
+            <div class="search-radar-bar">
+                <input type="text" id="liveSearchQuery" placeholder="🔍 Search item passing by (e.g. beans, water)...">
+                <button onclick="simulateNeighborhoodSearch()">Find Nearby</button>
+            </div>
+
             <div id="neighborhoodBulletin" class="dispatch-bulletin">
                 📰 <b>Neighborhood Dispatch:</b> Scanning schedules...
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span>📍 <b id="myLocationText">Accra Center</b></span>
-                <span class="status-pill">🟢 Uber-Live Radar</span>
+                <span class="status-pill">🟢 Local Corridor Active</span>
             </div>
 
             <!-- Vendor Radar Feed Box -->
             <div id="vendorFeedBox" class="radar-feed-box">
-                <div style="color: #666; text-align: center; padding: 2px; font-size: 9px;">Scanning cloud radar...</div>
-            </div>
-
-            <div class="wishlist-section">
-                <div style="font-weight: bold; margin-bottom: 1px;">🔮 Future Craving / Need Alert:</div>
-                <div style="display: flex; gap: 3px;">
-                    <select id="wishItem" style="font-size:9px; padding:2px; flex:1;">
-                        <optgroup label="🍔 Consumables">
-                            <option value="beans">🫘 Hot Beans & Plantain</option>
-                            <option value="bread">🍞 Fresh Bread</option>
-                            <option value="chips">🍟 Plantain Chips</option>
-                            <option value="water">🧊 Ice Water</option>
-                        </optgroup>
-                        <optgroup label="🛍️ Non-Consumables">
-                            <option value="charger">🔌 Phone Charger & Cables</option>
-                            <option value="slippers">🩴 Slippers / Sandals</option>
-                            <option value="tissue">🧻 Toilet Tissue / Wipes</option>
-                        </optgroup>
-                    </select>
-                    <input type="time" id="wishTime" value="14:00" style="font-size:9px; padding:2px; width:50px;">
-                    <button onclick="setWishlist()" style="margin-top:0; width:auto; padding:2px 5px; font-size:9px; background:#007bff; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">Set</button>
-                </div>
+                <div style="color: #666; text-align: center; padding: 2px; font-size: 9px;">Scanning local street radar...</div>
             </div>
 
             <button style="padding:4px; background:#007bff; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; width:100%; margin-top:2px; font-weight:bold;" onclick="setMyCurrentLocation()">Set House to Current GPS</button>
@@ -339,6 +352,7 @@
         let perimeterCircle;
         let activeMapMarkers = {};
         let vendorPathTrails = {};
+        let activeNeighborhoodQuery = "";
 
         function initMap() {
             const accraCenter = [5.6037, -0.1870];
@@ -361,6 +375,20 @@
         }
 
         window.onload = initMap;
+
+        function simulateNeighborhoodSearch() {
+            const query = document.getElementById('liveSearchQuery').value.toLowerCase().trim();
+            if (!query) {
+                activeNeighborhoodQuery = "";
+                alert("Search cleared. Scanning general neighborhood corridor.");
+                scanCloudRadar();
+                return;
+            }
+
+            activeNeighborhoodQuery = query;
+            alert(`🔍 Searching local corridor for vendors passing by with "${query}"...`);
+            scanCloudRadar();
+        }
 
         function switchMode(mode) {
             if (mode === 'customer') {
@@ -430,6 +458,7 @@
         let customerLat = 5.6037; 
         let customerLon = -0.1870;
         const ALERT_RADIUS_METERS = 500;
+        const LOCAL_SEARCH_RADIUS_METERS = 1200; // Strict local corridor threshold
         let previousDistances = {};
 
         const dummyVendors = [
@@ -447,16 +476,6 @@
             hours = hours % 12;
             hours = hours ? hours : 12;
             return `${hours}:${minutes} ${ampm}`;
-        }
-
-        async function setWishlist() {
-            const item = document.getElementById("wishItem").value;
-            const time = document.getElementById("wishTime").value;
-
-            if (supabaseClient) {
-                await supabaseClient.from('customer_wishlists').insert([{ product_code: item, target_time: time + ':00', lat: customerLat, lon: customerLon }]);
-            }
-            alert(`🔮 Wishlist Magic Enabled! Tracking ${item} around ${time}.`);
         }
 
         function setMyCurrentLocation() {
@@ -517,23 +536,32 @@
             let htmlContent = "";
             let bulletinText = "";
             let currentActiveIds = [];
+            let localMatchFound = false;
 
             activeHawkers.forEach(data => {
-                currentActiveIds.push(data.id);
                 const distance = Math.round(getDistanceFromLatLonInMeters(customerLat, customerLon, data.lat, data.lon));
+                
+                // STRICT PROXIMITY CHECK: Ignore vendors too far away from the neighborhood corridor
+                if (distance > LOCAL_SEARCH_RADIUS_METERS) return;
+
+                currentActiveIds.push(data.id);
                 const isAtGate = distance <= ALERT_RADIUS_METERS;
                 const emoji = getProductEmoji(data.product_code);
                 const vendorLatLng = [data.lat, data.lon];
 
+                // Check search query match against local corridor vendors
+                const matchesSearch = activeNeighborhoodQuery === "" || data.product_code.toLowerCase().includes(activeNeighborhoodQuery) || data.id.toLowerCase().includes(activeNeighborhoodQuery);
+                if (matchesSearch && activeNeighborhoodQuery !== "") localMatchFound = true;
+
                 if (!activeMapMarkers[data.id]) {
                     const customIcon = L.divIcon({
                         className: 'custom-vendor-pin',
-                        html: `<div style="background:white; border:2px solid #28a745; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${emoji}</div>`,
+                        html: `<div style="background:white; border:2px solid ${matchesSearch && activeNeighborhoodQuery !== '' ? '#ffc107' : '#28a745'}; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${emoji}</div>`,
                         iconSize: [28, 28]
                     });
 
                     activeMapMarkers[data.id] = L.marker(vendorLatLng, { icon: customIcon }).addTo(map)
-                        .bindPopup(`<b>${data.id}</b><br>${emoji} Selling now`);
+                        .bindPopup(`<b>${data.id}</b><br>${emoji} Passing nearby with ${data.product_code}`);
                     
                     vendorPathTrails[data.id] = [vendorLatLng];
                 } else {
@@ -544,8 +572,8 @@
 
                     if (!activeMapMarkers[data.id].polyLine) {
                         activeMapMarkers[data.id].polyLine = L.polyline(vendorPathTrails[data.id], {
-                            color: '#007bff',
-                            weight: 3,
+                            color: matchesSearch && activeNeighborhoodQuery !== '' ? '#ffc107' : '#007bff',
+                            weight: matchesSearch && activeNeighborhoodQuery !== '' ? 5 : 3,
                             opacity: 0.7
                         }).addTo(map);
                     } else {
@@ -561,13 +589,13 @@
                 }
                 previousDistances[data.id] = distance;
 
-                if (distance <= 1200) {
-                    let statusMsg = isAtGate ? "🚨 AT YOUR GATE!" : `🚶 Approaching (${distance}m)`;
-                    let itemClass = isAtGate ? "vendor-radar-item at-gate" : "vendor-radar-item";
+                if (activeNeighborhoodQuery === "" || matchesSearch) {
+                    let statusMsg = isAtGate ? "🚨 AT YOUR GATE!" : `🚶 Passing nearby (${distance}m)`;
+                    let itemClass = matchesSearch && activeNeighborhoodQuery !== "" ? "vendor-radar-item highlighted" : (isAtGate ? "vendor-radar-item at-gate" : "vendor-radar-item");
 
                     htmlContent += `
                         <div class="${itemClass}">
-                            <div><b>${emoji} ${data.id}</b> <span style="font-size:8px; color:#666;">(${distance}m)</span></div>
+                            <div><b>${emoji} ${data.id}</b> <span style="font-size:8px; color:#666;">(${data.product_code} - ${distance}m)</span></div>
                             <div style="font-weight:bold; color:${isAtGate ? '#dc3545' : '#28a745'};">${statusMsg}</div>
                         </div>
                     `;
@@ -577,6 +605,14 @@
                 bulletinText += `📢 <b>${data.id}</b> (${emoji}) scheduled around <b>${formattedTime}</b>. `;
             });
 
+            if (activeNeighborhoodQuery !== "" && !localMatchFound) {
+                htmlContent = `<div style="color: #d9534f; text-align: center; padding: 4px; font-size: 9px; font-weight: bold;">⚠️ No vendors passing through your neighborhood corridor with "${activeNeighborhoodQuery}". Logged to Craving Radar!</div>`;
+                
+                if (supabaseClient) {
+                    supabaseClient.from('customer_wishlists').insert([{ product_code: activeNeighborhoodQuery, target_time: '14:00:00', lat: customerLat, lon: customerLon }]).then(() => {});
+                }
+            }
+
             Object.keys(activeMapMarkers).forEach(id => {
                 if (!currentActiveIds.includes(id)) {
                     map.removeLayer(activeMapMarkers[id]);
@@ -585,7 +621,7 @@
                 }
             });
 
-            feedBox.innerHTML = htmlContent || '<div style="color: #666; text-align: center; padding: 2px; font-size: 9px;">No vendors currently in perimeter.</div>';
+            feedBox.innerHTML = htmlContent || '<div style="color: #666; text-align: center; padding: 2px; font-size: 9px;">No vendors currently passing your neighborhood corridor.</div>';
             bulletinBox.innerHTML = bulletinText || "📰 <b>Neighborhood Dispatch:</b> No upcoming schedules for today yet.";
         }
 
